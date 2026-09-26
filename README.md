@@ -35,60 +35,121 @@
 
 本リポジトリに同梱されている **FinReAct Interactive Dashboard** は、自律型AIエージェントの **ReAct（Reasoning + Acting + Observation）フレームワーク** に基づき、リアルタイムに思考プロセスをストリーミング配信しながら財務調査を完遂します。
 
-### 🔄 ReAct 自律推論アーキテクチャ
+視覚的な理解を深めるため、本システムは **「(1) 各ステップで実行される自律思考・行動のコアサイクル（ミクロ構造）」** と **「(2) 調査開始からダッシュボード描画までの5段階パイプライン（マクロ構造）」** の2層構造で可視化しています。
+
+---
+
+### (1) ReAct コア推論ループ（各ステップ共通の思考・行動エンジン）
+
+AIエージェントは各段階において、あらかじめ固定されたスクリプトを機械的に実行するのではなく、**「現状の把握と推論（Thought）」→「外部ツール呼び出し（Action）」→「実行結果の検証・数値照合（Observation）」** の自律サイクルを回しながら次のアクションを決定します。
 
 ```mermaid
-flowchart TD
-    User([ユーザー入力 / 企業名・ティッカー]) --> Step0[エフェメラル認証 & セッション確立]
-    Step0 --> StreamStart[SSE リアルタイムストリーム開始]
+flowchart LR
+    %% スタイル定義
+    classDef thoughtStyle fill:#2e1065,stroke:#a855f7,stroke-width:2px,color:#f8fafc;
+    classDef actionStyle fill:#0c4a6e,stroke:#0284c7,stroke-width:2px,color:#f8fafc;
+    classDef obsStyle fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#f8fafc;
 
-    subgraph ReActLoop ["ReAct 自律推論サイクル (Step 1 〜 Step 5)"]
-        direction TB
-        
-        %% Step 1
-        S1_Thought["🧠 Thought 1: 調査計画・一次開示アクセス戦略の策定"] --> S1_Action["⚡ Action: retrieve_primary_disclosures<br>(EDINET / SEC EDGAR / 取引所アーカイブ探索)"]
-        S1_Action --> S1_Obs["👁️ Observation: 確定財務三表・セグメント・注記情報の取得完了"]
-        
-        %% Step 2
-        S1_Obs --> S2_Thought["🧠 Thought 2: 決定論的指標計算 & デュポン分解の実行"]
-        S2_Thought --> S2_Action["⚡ Action: compute_deterministic_ratios<br>(scripts/financial_calc.py 呼び出し)"]
-        S2_Action --> S2_Obs["👁️ Observation: ROE・ROIC・CCC・Net Debt・デュポン3段階の誤差ゼロ確定"]
-        
-        %% Step 3
-        S2_Obs --> S3_Thought["🧠 Thought 3: 競合ピアベンチマーク多面比較の実行"]
-        S3_Thought --> S3_Action["⚡ Action: benchmark_peers<br>(同業2〜3社とのシェア・OPM・CCC・負債倍率対照)"]
-        S3_Action --> S3_Obs["👁️ Observation: 競合比較マトリクス & 業界インプリケーション確定"]
-        
-        %% Step 4
-        S3_Obs --> S4_Thought["🧠 Thought 4: 早期警戒指標(EWI) & リスクマトリクス構築"]
-        S4_Thought --> S4_Action["⚡ Action: evaluate_risk_ewi<br>(財務波及経路・重要度・発生確率の4象限評価)"]
-        S4_Action --> S4_Obs["👁️ Observation: 2x2 リスク・ヒートマップ & 監視開示書類の特定"]
-        
-        %% Step 5
-        S4_Obs --> S5_Thought["🧠 Thought 5: 標準出力フォーマット(A〜H)レポートの統合生成"]
-        S5_Thought --> S5_Action["⚡ Action: synthesize_full_dossier<br>(機関投資家レポート & チャート用構造化JSON作成)"]
-        S5_Action --> S5_Obs["👁️ Observation: A〜H完全報告書およびダッシュボードペイロード完成"]
+    subgraph ReActEngine ["🔁 自律型 AI エージェントのコア推論エンジン (ReAct Cycle)"]
+        direction LR
+        T["🧠 1. 思考 (Thought)<br>状況の把握・仮説立案・次に必要な情報の特定"]
+        A["⚡ 2. 行動 (Action)<br>開示探索 / Python計算 / 競合比較ツールの呼出"]
+        O["👁️ 3. 観測 (Observation)<br>取得データの整合性検証・計算結果の確認"]
+
+        T ==>|"ツール選定 & 引数決定"| A
+        A ==>|"生データ返却"| O
+        O ==>|"検証結果をコンテキストに統合"| T
     end
 
-    StreamStart --> ReActLoop
-    ReActLoop --> DashboardUI["📊 FinReAct Dashboard 描画 & 各種エクスポート"]
-    
-    DashboardUI --> Tab1["📊 Overview & Charts<br>(時系列グラフ / デュポンツリー / CCC Waterfall)"]
-    DashboardUI --> Tab2["📑 Institutional Report (A〜H)<br>(Sticky TOC Quick Jump 付き完全レポート)"]
-    DashboardUI --> Tab3["⚔️ Peer Benchmark<br>(4指標 Hero カード & 優位性バッジ)"]
-    DashboardUI --> Tab4["🛡️ Risks & EWI<br>(2x2 ヒートマップマトリクス & 監査ステータス)"]
-    DashboardUI --> Export["📥 Export Dossier ▾<br>(Full PDF / Exec PDF / MD / JSON / Clipboard)"]
+    class T thoughtStyle;
+    class A actionStyle;
+    class O obsStyle;
 ```
 
-### 📋 各ステップの詳細
+---
 
-| ステップ | 思考（Thought） | ツール実行（Action） | 観測・成果（Observation） |
+### (2) 5段階エンドツーエンド処理パイプライン (End-to-End Architecture)
+
+ユーザーからの企業リクエストを受け取り、エフェメラルセッションを通じて5つの自律フェーズを逐次完遂し、ダッシュボードおよびエクスポート用データへと変換するシステム全体の連携フローです。
+
+```mermaid
+flowchart LR
+    %% レイヤー別スタイル定義
+    classDef clientStyle fill:#1e293b,stroke:#38bdf8,stroke-width:2px,color:#f8fafc;
+    classDef phaseStyle fill:#172554,stroke:#60a5fa,stroke-width:2px,color:#f8fafc;
+    classDef toolStyle fill:#042f2e,stroke:#14b8a6,stroke-width:2px,color:#f8fafc;
+    classDef uiStyle fill:#2e1065,stroke:#c084fc,stroke-width:2px,color:#f8fafc;
+    classDef exportStyle fill:#451a03,stroke:#f59e0b,stroke-width:2px,color:#f8fafc;
+
+    %% 1. クライアント入力層
+    subgraph Layer1 ["1. クライアント & 認証層"]
+        User["👤 ユーザー入力<br>企業名 / ティッカー<br>(例: Lenovo, トヨタ)"]
+        Session["🔒 一時セッション確立<br>Ephemeral In-Memory Token<br>(APIキー非露出)"]
+        User --> Session
+    end
+
+    %% 2. ReAct 自律推論パイプライン
+    subgraph Layer2 ["2. FinReAct 自律推論パイプライン (SSE Streaming)"]
+        direction TB
+        S1["【Step 1】一次開示アクセス<br>・有報 / 10-K / 短信探索<br>・確定財務三表の取得"]
+        S2["【Step 2】決定論的指標計算<br>・3段階デュポン分解 (ROE)<br>・ROIC / CCC / Net Debt"]
+        S3["【Step 3】競合ベンチマーク<br>・同業2〜3社との横並び対照<br>・利益率 / 運転資本 / 財務余力"]
+        S4["【Step 4】早期警戒・リスク評価<br>・2×2 リスクヒートマップ<br>・EWI指標 & 監視開示特定"]
+        S5["【Step 5】機関レポート統合生成<br>・A〜H標準規格 Markdown<br>・ダッシュボード用構造化JSON"]
+
+        S1 -->|"三表データ確定"| S2
+        S2 -->|"指標群確定"| S3
+        S3 -->|"競合対比知見"| S4
+        S4 -->|"リスク評価確定"| S5
+    end
+
+    %% 3. バックエンド・実行ツール群
+    subgraph Layer3 ["3. 実行ツール & 知識リソース"]
+        direction TB
+        T_Gemini["🤖 Google Gemini 2.5<br>(開示構造化・推論・定性分析)"]
+        T_Calc["🧮 Python 決定論的計算機<br>(scripts/financial_calc.py)"]
+        T_Archive["📚 開示アーカイブ & EDGAR<br>(一次情報データセット)"]
+    end
+
+    %% 4. フロントエンド・可視化層
+    subgraph Layer4 ["4. 可視化ダッシュボード & 出力"]
+        direction TB
+        DashUI["📊 FinReAct Dashboard<br>・📊 Overview & Charts (推移・CCC)<br>・📑 A〜H 機関レポート (Sticky TOC)<br>・⚔️ ピアベンチマーク (Heroカード)<br>・🛡️ 2×2 リスクヒートマップ"]
+        ExportMenu["📥 統合エクスポート (Dossier)<br>・📦 Full Dossier (PDF)<br>・📄 Institutional Report (PDF)<br>・📑 Integrated Markdown (.md)<br>・📊 Raw Financial Dataset (.json)"]
+        DashUI --> ExportMenu
+    end
+
+    %% システム間連携
+    Session ==>|"SSEストリーム開始"| S1
+
+    S1 <-->|"開示探索"| T_Archive
+    S1 <-->|"テキスト正規化"| T_Gemini
+    S2 <-->|"誤差ゼロ指標計算"| T_Calc
+    S3 <-->|"同業データ対比"| T_Archive
+    S4 <-->|"リスク定性評価"| T_Gemini
+    S5 <-->|"最終レポート構成"| T_Gemini
+
+    S5 ==>|"リアルタイム描画"| DashUI
+
+    %% スタイル適用
+    class User,Session clientStyle;
+    class S1,S2,S3,S4,S5 phaseStyle;
+    class T_Gemini,T_Calc,T_Archive toolStyle;
+    class DashUI uiStyle;
+    class ExportMenu exportStyle;
+```
+
+---
+
+### 📋 各ステップの自律処理内容と成果物
+
+| ステップ | 主な思考（Thought） | 実行ツール（Action） | 検証・成果物（Observation） |
 |---|---|---|---|
-| **Step 1** | 対象企業の開示資料体系、報告通貨、会計基準（IFRS/US-GAAP/日本基準）を確認し調査計画を立案 | `retrieve_primary_disclosures` | 過去複数期の貸借対照表（B/S）、損益計算書（P&L）、キャッシュフロー計算書（C/F）の確定数値を抽出 |
-| **Step 2** | 四則演算ハルシネーションを排除するため、決定論的計算エンジンを実行 | `compute_deterministic_ratios` | デュポン3段階分解（ROE = 純利益率 × 資産回転率 × レバレッジ）、ROIC、現金循環日数（CCC）、Net Debt/EBITDAを確定 |
-| **Step 3** | 同一市場またはグローバル競合他社との構造的差異を多面検証 | `benchmark_peers` | 営業利益率（OPM）、資本効率、運転資本サイクル、財務安全性のピアベンチマーク対照表を作成 |
-| **Step 4** | 財務諸表の注記・リスク情報から潜在的下振れ要因と早期警戒指標（EWI）を特定 | `evaluate_risk_ewi` | 財務影響度（縦軸）× 発生確率（横軸）の 2×2 リスクヒートマップおよび確認すべき開示書類を特定 |
-| **Step 5** | 全検証データを集約し、機関投資家向け標準規格（A〜H）に準拠した調査パッケージを統合生成 | `synthesize_full_dossier` | A〜H完全Markdown、チャート用JSON、KPIカード、PDF印刷用レイアウトを生成してクライアントへ送信 |
+| **Step 1**<br>一次開示アクセス | 企業の開示体系、報告通貨、会計基準（IFRS / US-GAAP / 日本基準）を特定し、調査計画を策定 | `retrieve_primary_disclosures`<br>(EDINET / SEC EDGAR / 取引所開示) | 過去複数期の貸借対照表（B/S）、損益計算書（P&L）、キャッシュフロー計算書（C/F）の確定数値を抽出 |
+| **Step 2**<br>決定論的指標計算 | 四則演算ハルシネーションを完全に排除するため、決定論的計算スクリプトを実行 | `compute_deterministic_ratios`<br>(`scripts/financial_calc.py`) | デュポン3段階分解（ROE = 純利益率 × 資産回転率 × 財務レバレッジ）、ROIC、現金循環日数（CCC）、Net Debt/EBITDAを確定 |
+| **Step 3**<br>競合ピアベンチマーク | 同一市場またはグローバル競合他社との構造的差異を多面検証 | `benchmark_peers`<br>(同業2〜3社との横並び対照) | 営業利益率（OPM）、資本効率、運転資本サイクル、財務安全性のピアベンチマーク対照表および業界インプリケーションを作成 |
+| **Step 4**<br>早期警戒・リスク評価 | 財務諸表注記・リスク情報から潜在的下振れ要因と早期警戒指標（EWI）を特定 | `evaluate_risk_ewi`<br>(影響度×確率の4象限評価) | 財務影響度（縦軸）× 発生確率（横軸）の 2×2 リスクヒートマップ（Critical / Severe / Moderate / Active）および確認すべき開示書類を特定 |
+| **Step 5**<br>機関レポート統合 | 全検証データを集約し、機関投資家向け標準規格（A〜H）に準拠した調査パッケージを統合生成 | `synthesize_full_dossier`<br>(Markdown & JSON レポートビルダー) | A〜H完全Markdown、Chart.js用時系列データ、DuPontドライバー、CCC Waterfallバー、印刷用PDFレイアウトを完成 |
 
 ---
 
