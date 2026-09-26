@@ -857,15 +857,205 @@ def build_peer_benchmark(matched_key: str, target_info: Dict[str, Any], latest_m
             ]
         }
 
-    # Apply category translation if non-Japanese
-    if lang in category_map and base_data:
-        t_map = category_map[lang]
+    # Apply category and phrase translation if non-Japanese
+    phrase_map = {
+        "en": {
+            "会計基準 / 決算期": "Accounting Standard / Fiscal Year",
+            "会計基準 / 報告通貨": "Accounting Standard / Currency",
+            "直近売上高": "Latest Revenue (Top-line)",
+            "PC事業シェア / 売上": "PC Market Share / Segment Revenue",
+            "営業利益率 (OPM)": "Operating Margin (OPM)",
+            "ROE (自己資本利益率)": "Return on Equity (ROE)",
+            "ROIC (投下資本利益率)": "Return on Invested Capital (ROIC)",
+            "Net Debt / EBITDA": "Net Debt / EBITDA",
+            "CCC (現金循環日数)": "Cash Conversion Cycle (CCC)",
+            "戦略ドライバー": "Strategic Growth Drivers",
+            "戦略的アライアンス": "Strategic Alliances",
+            "コア競争力": "Core Competitive Advantage",
+            "主力事業ドメイン": "Core Business Domains",
+            "電動化戦略": "Electrification Strategy",
+            "エコシステム・AI": "Ecosystem & AI Strategy",
+            "決算期差に留意": "Note fiscal year end differences",
+            "決算期のズレに留意": "Note fiscal year end differences",
+            "会計基準・為替換算影響に留意": "Note accounting standards and FX conversion",
+            "会計基準・事業構造差に留意": "Note accounting standards and business mix differences",
+            "報告通貨（円・ドル・ユーロ）および決算期差に留意": "Note reporting currency (JPY/USD/EUR) and fiscal period differences",
+            "米ビッグテック3社ともUS GAAP採用、決算期差に留意": "All 3 US peers report under US GAAP; note fiscal year differences",
+            "決算期・地域特性の違い": "Differences in fiscal year and regional exposures",
+            "市場シェアおよび事業規模の相対評価": "Relative market share and revenue scale comparison",
+            "DellとLenovoがAIサーバー・PC需要で牽引": "Dell and Lenovo driven by AI servers and PC refresh demand",
+            "レノボが首位維持、AI PC先行投入": "Lenovo maintains #1 lead, early rollout of AI PCs",
+            "米系は高利益率、レノボはハード薄利＋高利益SSGで補完": "US peers enjoy higher OPM; Lenovo offsets lower hardware margin with high-margin SSG",
+            "自社株買い依存と営業回転の差": "Share buyback leverage vs operating velocity differences",
+            "レノボの財務基盤が3社中最も安全圏": "Lenovo's balance sheet represents the safest leverage profile among the three",
+            "3社とも極めて効率的なマイナスまたは極低水準の運転資本": "All three operate with highly efficient negative or near-zero working capital",
+            "クラウド・AI投資需要でMSFTが二桁増収を堅持": "MSFT sustains double-digit revenue growth driven by cloud and AI demand",
+            "MSFTはエンタープライズ、AAPLはコンシューマ、GOOGLは広告": "MSFT focuses on enterprise, AAPL on consumers, GOOGL on digital advertising",
+            "MSFTの高付加価値ソフトウェア・クラウドモデルが突出": "MSFT's high-margin software & cloud model outperforms peers",
+            "AAPLは自己株式取得によるレバレッジ主導、MSFTは資本蓄積型": "AAPL is leverage-driven via continuous buybacks; MSFT is capital-accumulating",
+            "3社ともにWACC(約8.5%)を大幅に超える付加価値創出": "All three generate significant excess economic value (EVA) above WACC (~8.5%)",
+            "3社ともに実質ネットキャッシュまたは最高格付(AAA/AA+)水準": "All three hold massive net cash or top-tier credit rating (AAA/AA+) balance sheets",
+            "強大な市場支配力と前受金により3社ともマイナスCCCを達成": "Dominant market power and customer deferred revenue allow all 3 to achieve negative CCC",
+            "円安恩恵とHEV需要回復によりトヨタが過去最高を更新": "Weaker JPY and resurgent HEV demand drive Toyota to historic highs",
+            "HEVミックス改善と為替効果でトヨタが競合を逆転": "Improved HEV mix and FX effects allow Toyota to outpace rivals",
+            "テスラは軽量B/Sで高水準、トヨタは金融事業資産を内包": "Tesla has an asset-light auto balance sheet; Toyota includes captive auto finance assets",
+            "トヨタ（自動車5.8兆円キャッシュ）・テスラともに実質無借金": "Both Toyota (automotive net cash ¥5.8T) and Tesla are practically debt-free",
+            "テスラは直販・BTOでマイナスCCC、日欧はディーラー網在庫を介在": "Tesla achieves negative CCC via direct BTO sales; Japan/EU models carry dealer network float",
+            "ハイブリッドのキャッシュ創出力が次世代投資原資を支える": "HEV cash generation directly funds next-generation electrified vehicle investments",
+            "BYDの急速な台数拡大とテスラの価格戦略の攻防": "BYD's rapid volume surge vs Tesla's price elasticity defense",
+            "テスラは値下げ競争で利益率圧縮、トヨタはHEVで再上昇": "Tesla margins compress amid price wars; Toyota margins expand via HEV pricing power",
+            "テスラの高い投下資本効率は維持もピークアウト傾向": "Tesla's high capital productivity remains strong but shows signs of peaking",
+            "3社ともに巨額のキャッシュクッションを保有": "All three maintain immense cash buffers and liquidity reserves",
+            "新興EV勢は直販とサプライヤー支払統制でマイナス運転資本を構築": "Pure-play EV makers leverage direct sales and vendor payable terms for negative working capital",
+            "知能化 vs コスト vs 総合信頼性の三つ巴": "Three-way battle: AI/Autonomous vs Ultra-low Cost vs Global Reliability",
+            "ハード買替えサイクル一服もサービス事業が下支え": "Hardware upgrade cycle moderates while Services segment bolsters margins",
+            "サービス比率向上で30%前後の高利益率を維持": "Expanding Services revenue maintains resilient ~30% operating margin",
+            "累計数千億ドルの自社株買いにより自己資本を極小化": "Cumulative multi-hundred billion dollar buybacks minimize equity base",
+            "年間1,100億ドルの営業CFにより実質的な債務リスクなし": "Annual operating cash flow of ~$110B eliminates substantive credit risk",
+            "サプライチェーンに対する圧倒的バイイングパワー（DPO長期化）": "Unrivaled bargaining power across supply chain enables extended DPO duration",
+            "20億台の稼働端末を基盤としたプライベートAI戦略": "Private AI ecosystem strategy anchored by 2.0+ billion active device install base",
+            "業界水準比較": "Industry Benchmark",
+            "業界平均水準": "Industry Average",
+            "業界上位水準": "Top-tier Industry Level",
+            "業界標準会計基準": "Industry Standard Accounting",
+            "同業平均水準": "Peer Average",
+            "同業上位水準": "Peer Upper Quartile",
+            "WACC超過水準": "Above WACC (~8.5%)",
+            "安全圏 (<2.0x)": "Conservative (<2.0x)",
+            "業界標準サイクル": "Industry Standard Cycle",
+            "実質無借金 (自動車単体)": "Net Cash (Auto Division)",
+            "実質ネットキャッシュ": "Net Cash Position",
+            "世界首位 (24%) / $58.9B": "Global #1 (24%) / $58.9B",
+            "シェア3位 / 約$48B": "#3 Share / ~$48B",
+            "シェア2位 / 約$38B": "#2 Share / ~$38B",
+            "N/A (債務超過)": "N/A (Negative Equity)",
+            "1.8日": "1.8 Days",
+            "-30日": "-30 Days",
+            "-25日": "-25 Days",
+            "-15.0日": "-15.0 Days",
+            "-40.0日": "-40.0 Days",
+            "28.0日": "28.0 Days",
+            "18.5日": "18.5 Days",
+            "-62.3日": "-62.3 Days",
+            "-28.0日": "-28.0 Days",
+            "HKFRS (3月期)": "HKFRS (March Year-End)",
+            "US GAAP (1月期)": "US GAAP (Jan Year-End)",
+            "US GAAP (10月期)": "US GAAP (Oct Year-End)",
+            "US GAAP (6月期)": "US GAAP (June Year-End)",
+            "US GAAP (9月期)": "US GAAP (Sept Year-End)",
+            "US GAAP (12月期)": "US GAAP (Dec Year-End)",
+            "IFRS (3月期)": "IFRS (March Year-End)",
+            "IFRS (12月期)": "IFRS (Dec Year-End)",
+            "HKFRS/CAS (12月期)": "HKFRS/CAS (Dec Year-End)"
+        }
+    }
+
+    if lang in phrase_map and base_data:
+        p_dict = phrase_map[lang]
         for row in base_data.get("rows", []):
-            cat = row.get("category", "")
-            if cat in t_map:
-                row["category"] = t_map[cat]
+            for field in ["category", "target_val", "peer1_val", "peer2_val", "implication"]:
+                val = str(row.get(field, "")).strip()
+                if val in p_dict:
+                    row[field] = p_dict[val]
+                elif val.endswith("日"):
+                    num = val[:-1]
+                    row[field] = f"{num} Days" if lang in ["en", "fr"] else (f"{num}天" if lang.startswith("zh") else val)
 
     return base_data
+
+
+def localize_risk(r: dict, lang: str) -> dict:
+    """Translates individual risk items into target language."""
+    if lang == "ja":
+        return r
+
+    impact_map = {
+        "en": {"高": "High", "中": "Medium", "低": "Low"},
+        "zh-CN": {"高": "高", "中": "中", "低": "低"},
+        "zh-TW": {"高": "高", "中": "中", "低": "低"},
+        "fr": {"高": "Élevé", "中": "Moyen", "低": "Faible"}
+    }
+    prob_map = {
+        "en": {"高": "High", "中": "Medium", "低": "Low", "顕在化": "Realized"},
+        "zh-CN": {"高": "高", "中": "中", "低": "低", "顕在化": "已显现"},
+        "zh-TW": {"高": "高", "中": "中", "低": "低", "顕在化": "已顯現"},
+        "fr": {"高": "Élevée", "中": "Moyenne", "低": "Faible", "顕在化": "Matérialisé"}
+    }
+    risk_text_map = {
+        "en": {
+            "地政学・関税規制": "Geopolitical & Tariff Regulations",
+            "対米輸出比率、中国外生産比率（現在約30%超）": "US export exposure, non-China production ratio (>30%)",
+            "四半期地域別売上注記": "Quarterly Geographic Revenue Disclosures",
+            "ISGの収益性改善遅延": "Delayed ISG Profitability Turnaround",
+            "CSP向け低マージン比率、ISG営業利益率": "Hyperscale CSP margin share, ISG segment EBIT",
+            "セグメント別損益": "Segment Operating Profit Disclosures",
+            "部材コスト高騰": "Component Price Inflation (DRAM/HBM/NAND)",
+            "DRAM/HBM/NANDスポット価格、粗利率推移": "Memory spot prices, Gross Margin trajectory",
+            "決算説明会質疑要約": "Earnings Call Q&A Transcripts",
+            "ワラント等金融負債の公正価値変動": "Fair Value Volatility of Derivative Warrants",
+            "自社株価水準、四半期非現金性損益": "Stock price level, non-cash mark-to-market P&L",
+            "デリバティブ注記": "Derivative Financial Instruments Disclosures",
+            "為替反転（円高）リスク": "FX Reversal (Strengthening JPY) Risk",
+            "ドル円レート推移、為替感応度注記": "USD/JPY trajectory, FX sensitivity disclosures",
+            "決算説明会資料": "Earnings Presentation Materials",
+            "中国市場でのBEV価格競争": "Intense BEV Price Competition in China",
+            "中国月次販売台数、合弁持分法損益": "Monthly China retail volume, JV equity earnings",
+            "セグメント情報": "Segment Information Notes",
+            "型式認証不正ガバナンス対応": "Type Approval Compliance & Governance Review",
+            "出荷停止車種台数、特別調査委報告": "Suspended vehicle volumes, Special Investigation Report",
+            "適時開示": "Timely Statutory Disclosures",
+            "FSD規制承認の遅延": "FSD Regulatory Approval Delay",
+            "規制当局の調査状況、ロボタクシー商用許可": "NHTSA investigations, Robotaxi commercial permit milestones",
+            "規制動向開示": "Regulatory Disclosures",
+            "新モデル量産立ち上げリスク": "Next-Gen Vehicle Ramp-Up Execution Risk",
+            "週次生産台数、4680電池歩留まり": "Weekly production rate, 4680 cell yield curve",
+            "四半期生産引渡報告": "Quarterly Production & Deliveries Report",
+            "自動車粗利率（規制クレジット除く）の低下": "Auto Gross Margin Erosion (ex-regulatory credits)",
+            "平均販売価格 (ASP) 推移、販促値下げ額": "Average Selling Price (ASP), price discount campaigns",
+            "四半期財務諸表": "Quarterly Financial Statements",
+            "AI資本支出増大によるフリーキャッシュフロー圧迫": "Surging AI Infrastructure Capex Pressuring FCF",
+            "四半期Capexガイダンス、現金創出力": "Quarterly Capex guidance, OCF trajectory",
+            "MD&A注記": "Management's Discussion & Analysis (MD&A)",
+            "中国サプライチェーン依存": "China Supply Chain & Assembly Concentration",
+            "インド・ベトナム生産比率、関税動向": "India/Vietnam production shift, tariff policy changes",
+            "サプライチェーン注記": "Supply Chain Disclosures",
+            "EU DMA / 米司法省反トラスト法規制": "EU Digital Markets Act (DMA) & US DOJ Antitrust Litigation",
+            "App Store手数料改定、訴訟進捗注記": "App Store fee restructuring, litigation contingencies",
+            "規制リスク注記": "Contingencies and Regulatory Risk Notes",
+            "中国市場でのiPhone競争激化": "Escalating Smartphone Rivalry in Greater China",
+            "グレーターチャイナ売上減収幅、現地シェア": "Greater China revenue decline, local OEM market share",
+            "地域別セグメント注記": "Regional Segment Notes",
+            "AI機能（Apple Intelligence）普及遅延": "Delayed Rollout & Adoption of Apple Intelligence",
+            "対応端末買替え比率、機能提供スケジュール": "Compatible device upgrade cycle, feature rollout schedule",
+            "製品発表イベント開示": "Product Event Disclosures",
+            "ゲーム事業（PS5）のハード採算性とサードパーティ手数料": "Gaming Hardware (PS5) Margin & 3rd-Party Digital Take Rates",
+            "PS5累計台数、PS Plus会員数、ハード原価": "PS5 install base, PS Plus subscribers, hardware BOM",
+            "半導体（CMOSイメージセンサー）の歩留まり・設備投資負担": "CMOS Image Sensor (I&SS) Yield & Heavy Fab Capex Burden",
+            "先端センサー歩留まり、スマートフォン市況": "Advanced CIS yields, global smartphone recovery",
+            "エンタメ事業（映画・音楽）のボラティリティ": "Entertainment (Pictures & Music) Earnings Volatility",
+            "興行収入、ストリーミング配信権契約": "Box office receipts, streaming licensing contracts",
+            "事業環境変動リスク": "Macro Business Environment Volatility",
+            "マージン動向": "Operating Margin Trend"
+        }
+    }
+
+    new_r = dict(r)
+    imp_dict = impact_map.get(lang, {})
+    prob_dict = prob_map.get(lang, {})
+    text_dict = risk_text_map.get(lang, {})
+
+    if r.get("impact") in imp_dict:
+        new_r["impact"] = imp_dict[r["impact"]]
+    if r.get("prob") in prob_dict:
+        new_r["prob"] = prob_dict[r["prob"]]
+    if r.get("name") in text_dict:
+        new_r["name"] = text_dict[r["name"]]
+    if r.get("ewi") in text_dict:
+        new_r["ewi"] = text_dict[r["ewi"]]
+    if r.get("doc") in text_dict:
+        new_r["doc"] = text_dict[r["doc"]]
+    return new_r
+
 
 
 # ---------------------------------------------------------------------------
@@ -889,7 +1079,7 @@ def build_comprehensive_a_to_h_report(
     standard = target_info.get("standard", "IFRS")
     sector = target_info.get("sector", "General Corporate")
     drivers = target_info.get("key_drivers", [])
-    risks = target_info.get("risks", [])
+    risks = [localize_risk(r, lang) for r in target_info.get("risks", [])]
     periods = target_info.get("periods", [])
 
     latest_period = periods[-1].period_name if periods else "Latest"
@@ -1692,7 +1882,7 @@ Return ONLY a valid JSON object strictly matching this schema, without any markd
         }
 
         # Build Full Markdown Report (Standard Format A to H)
-        base_tables_md = analyzer.generate_markdown_report(target_info["company_name"], target_info["currency"], target_info["standard"])
+        base_tables_md = analyzer.generate_markdown_report(target_info["company_name"], target_info["currency"], target_info["standard"], lang=lang)
         markdown_text = build_comprehensive_a_to_h_report(
             target_info=target_info,
             latest=latest,
@@ -1732,7 +1922,7 @@ Return ONLY a valid JSON object strictly matching this schema, without any markd
             },
             "charts": chart_data,
             "drivers": target_info.get("key_drivers", []),
-            "risks": target_info.get("risks", []),
+            "risks": [localize_risk(r, lang) for r in target_info.get("risks", [])],
             "peers": peers_list,
             "peer_benchmark": peer_benchmark_data,
             "report_markdown": markdown_text

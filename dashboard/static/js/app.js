@@ -147,9 +147,12 @@ document.addEventListener('DOMContentLoaded', () => {
     applyLanguage(getCurrentLanguage());
   }
 
-  // Listen to Language Changes for Dynamic Content Re-render
+  // Listen to Language Changes for Dynamic Content Re-render & Localization
   window.addEventListener('languageChanged', () => {
-    if (currentAnalysisData) {
+    const val = companyInput?.value?.trim();
+    if (val && currentAnalysisData && !runAnalysisBtn?.disabled) {
+      startReActAnalysis(val);
+    } else if (currentAnalysisData) {
       renderFinalDashboard(currentAnalysisData);
     }
   });
@@ -709,15 +712,394 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // -------------------------------------------------------------------------
+  // Multilingual Dossier & PDF Export Localization Dictionary
+  // -------------------------------------------------------------------------
+  const I18N_DOSSIER = {
+    en: {
+      titlePrefix: "[Comprehensive Research Dossier]",
+      pubDate: "Publication Date",
+      std: "Accounting Standard",
+      curr: "Reporting Currency",
+      sector: "Sector",
+      healthScore: "Financial Health Score",
+      healthRating: "Strong Investment Grade",
+      disclaimer: "Regulatory Disclaimer: This dossier represents objective corporate finance analysis and empirical fact-finding based strictly on official statutory filings (EDGAR, HKEX, EDINET); it does NOT constitute investment advice, securities recommendations, or underwriting solicitation.",
+      sec1Title: "1. Executive Key Financial KPI Summary",
+      thMetric: "Indicator",
+      thLatest: "Latest Value",
+      thYoY: "YoY / Evaluation",
+      thImp: "Financial Implication",
+      revName: "Revenue (Top-Line)",
+      revImp: "Scale expansion and core commercial momentum",
+      opmName: "Operating Margin (OPM)",
+      opmImp: "Core business profitability & cost architecture",
+      roeName: "Return on Equity (ROE)",
+      roeEval: "High Efficiency",
+      roeImp: "Comprehensive return on shareholders' equity",
+      roicName: "Return on Invested Capital (ROIC)",
+      roicEval: "vs WACC (8.5%)",
+      roicImp: "Excess Economic Value Added (EVA) spread",
+      fcfName: "Free Cash Flow (FCF)",
+      fcfEval: "Operating CF - Capex",
+      fcfImp: "Net organic cash generation from operations",
+      cccName: "Cash Conversion Cycle (CCC)",
+      cccEval: "Working Capital",
+      cccImp: "Cash conversion cycle across trade inventory float",
+      netDebtName: "Net Debt / EBITDA",
+      netDebtEval: "Safe (<2.0x)",
+      netDebtImp: "Solvency, deleveraging capacity & debt cushion",
+      sec2Title: "2. Capital Efficiency Factor Decomposition (3-Stage DuPont Tree)",
+      dupontFormula: "- **ROE ({roe}%)** = Net Profit Margin ({nm}%) × Asset Turnover ({at}x) × Financial Leverage ({em}x)",
+      dupont1: "1. **Net Profit Margin**: Net profit as a share of revenue. Reflects pricing power and cost discipline.",
+      dupont2: "2. **Asset Turnover**: Asset velocity and efficiency in transforming capital assets into sales revenue.",
+      dupont3: "3. **Financial Leverage (Equity Multiplier)**: Total assets relative to stockholders' equity. Reflects capital structure and balance sheet optimization.",
+      sec3Title: "3. Working Capital Cycle Deep-Dive (CCC Breakdown)",
+      cccFormula: "- **Cash Conversion Cycle CCC ({ccc} Days)** = Days Sales Outstanding DSO (+{dso} Days) + Days Inventory Outstanding DIO (+{dio} Days) − Days Payables Outstanding DPO (-{dpo} Days)",
+      cccTakeaway: "An ultra-low or negative Cash Conversion Cycle demonstrates exceptional procurement leverage and credit terms, establishing an auto-financing business model that supports revenue expansion without external short-term borrowing.",
+      sec4Title: "4. Autonomous AI ReAct Reasoning Process & Statutory Verification Logs",
+      reactDone: "*(ReAct stream reasoning logs completed)*",
+      sec5Title: "5. Peer Benchmark Multi-Dimensional Comparison Matrix",
+      thBenchmarkMetric: "Metric / Dimension",
+      thBenchmarkImp: "Sector Implications",
+      sec6Title: "6. Risk Assessment & Early Warning Indicators (EWI) Matrix",
+      thRiskName: "Risk Factor",
+      thRiskImpact: "Severity (Impact)",
+      thRiskProb: "Likelihood (Prob)",
+      thRiskEwi: "Early Warning Indicator (EWI)",
+      thRiskDoc: "Regulatory Document Reference",
+      sec7Title: "7. Institutional Comprehensive Corporate Finance Report (A〜H Framework)",
+      compiledBy: "Report Compiled by FinReAct Agentic AI System. All data cross-referenced with primary disclosures.",
+      dateLocale: "en-US",
+      timeOptions: { hour: '2-digit', minute: '2-digit' },
+      execPdfHeader: "FinReAct Institutional Research Report",
+      execPdfDatePrefix: "Date: ",
+      execPdfSubtitle: "Institutional Corporate Finance Research Report (Standard A~H Framework)",
+      execPdfFooterLeft: "Confidential — Generated by FinReAct Agentic AI System",
+      execPdfFooterRight: "Primary Filings: SEC Form 10-K / HKEX / EDINET / Non-Investment Advice",
+      allPdfHeader: "FinReAct Comprehensive Intelligence Dossier",
+      allPdfDatePrefix: "Date: ",
+      allPdfSubtitle: "3-Statement Financials, AI Reasoning Logs, DuPont Tree, CCC, Peer Benchmarks, Risk Matrix",
+      allPdfFooterLeft: "Confidential — Generated by FinReAct Agentic AI System",
+      allPdfFooterRight: "Primary Statutory Citations: EDGAR 10-K / HKEX / EDINET / Not Investment Advice",
+      generatingPdf: "⏳ Generating PDF...",
+      downloadedPdf: "✅ PDF Downloaded!",
+      generatingAllPdf: "⏳ Generating Full Dossier PDF...",
+      downloadedAllPdf: "✅ Full Dossier PDF Downloaded!",
+      notReadyAlert: "Report is not generated yet. Please run analysis first.",
+      errorAlert: "Error generating PDF. Opening print dialog instead.",
+      copiedAlert: "📋 Comprehensive research dossier Markdown copied to clipboard!"
+    },
+    ja: {
+      titlePrefix: "【総合調査パッケージ】",
+      pubDate: "発行日時",
+      std: "会計基準",
+      curr: "報告通貨",
+      sector: "セクター",
+      healthScore: "財務健全性スコア",
+      healthRating: "Strong Investment Grade",
+      disclaimer: "免責事項・留意事項: 本調査パッケージは公開情報・法定開示書類に基づく客観的財務分析であり、有価証券の売買推奨や投資助言ではありません。",
+      sec1Title: "1. エグゼクティブ主要財務KPIサマリー",
+      thMetric: "指標項目",
+      thLatest: "最新値",
+      thYoY: "前年比 / 評価",
+      thImp: "財務インプリケーション",
+      revName: "売上高 (Latest Revenue)",
+      revImp: "コア事業および成長領域の拡大状況",
+      opmName: "営業利益率 (Operating Margin)",
+      opmImp: "本業の付加価値創出力・コスト構造",
+      roeName: "自己資本利益率 (ROE)",
+      roeEval: "効率区分",
+      roeImp: "株主資本に対する総合利回り",
+      roicName: "投下資本利益率 (ROIC)",
+      roicEval: "vs WACC (8.5%)",
+      roicImp: "投下資本に対する超過付加価値 (EVA)",
+      fcfName: "フリーキャッシュフロー (FCF)",
+      fcfEval: "営業CF - Capex",
+      fcfImp: "事業活動からの純現金創出力",
+      cccName: "現金循環日数 (CCC)",
+      cccEval: "運転資本効率",
+      cccImp: "仕入〜在庫〜売掛の資金拘束日数",
+      netDebtName: "Net Debt / EBITDA",
+      netDebtEval: "健全水準 (<2.0x)",
+      netDebtImp: "有利子負債返済余力・安全性",
+      sec2Title: "2. 資本効率要因分解（3段階デュポンツリー）",
+      dupontFormula: "- **ROE ({roe}%)** = 売上高純利益率 ({nm}%) × 総資産回転率 ({at}回) × 財務レバレッジ ({em}倍)",
+      dupont1: "1. **純利益率 (Net Margin)**: 売上高に対する最終利益の割合。収益性および価格決定力を反映。",
+      dupont2: "2. **総資産回転率 (Asset Turnover)**: 保有資産をどれだけ効率的に売上に転換しているかの事業回転速度。",
+      dupont3: "3. **財務レバレッジ (Equity Multiplier)**: 自己資本に対する総資産の倍率。自己株式取得や外部負債活用状況。",
+      sec3Title: "3. 運転資本サイクル詳細分析（CCCブレイクダウン）",
+      cccFormula: "- **現金循環日数 CCC ({ccc}日)** = 売上債権回収日数 DSO (+{dso}日) + 棚卸在庫滞留日数 DIO (+{dio}日) − 仕入先支払猶予日数 DPO (-{dpo}日)",
+      cccTakeaway: "現金循環日数が極低水準またはマイナスの場合、強力なバイイングパワーと前受金活用により、売上拡大局面でも追加借入が不要な「自己金融型ビジネスモデル」を実現しています。",
+      sec4Title: "4. 自律型AI ReAct推論プロセス & 一次開示検証ログ",
+      reactDone: "*(ReActストリームログ取得完了)*",
+      sec5Title: "5. 競合ベンチマーク多面比較マトリクス",
+      thBenchmarkMetric: "指標 / カテゴリ",
+      thBenchmarkImp: "業界インプリケーション",
+      sec6Title: "6. リスク評価 & 早期警戒指標（EWI）マトリクス",
+      thRiskName: "リスク要因",
+      thRiskImpact: "重要度 (Impact)",
+      thRiskProb: "発生確率 (Prob)",
+      thRiskEwi: "早期警戒指標 (EWI)",
+      thRiskDoc: "監視対象開示書類",
+      sec7Title: "7. 機関投資家向け完全財務分析レポート（A〜H標準規格）",
+      compiledBy: "Report Compiled by FinReAct Agentic AI System. All data cross-referenced with primary disclosures.",
+      dateLocale: "ja-JP",
+      timeOptions: { hour: '2-digit', minute: '2-digit' },
+      execPdfHeader: "FinReAct Institutional Research Report",
+      execPdfDatePrefix: "発行日: ",
+      execPdfSubtitle: "企業財務三表・資本効率・競合ベンチマーク統合調査報告書（A〜H標準規格）",
+      execPdfFooterLeft: "厳秘 (Confidential) — Generated by FinReAct Agentic AI System",
+      execPdfFooterRight: "一次情報根拠: 有価証券報告書 / SEC Form 10-K / 決算短信 / 投資判断非推奨",
+      allPdfHeader: "FinReAct Comprehensive Intelligence Dossier",
+      allPdfDatePrefix: "発行日: ",
+      allPdfSubtitle: "企業財務三表・AI推論ログ・デュポン分解・CCC・競合比較・リスク評価 完全調査パッケージ",
+      allPdfFooterLeft: "厳秘 (Confidential) — Generated by FinReAct Agentic AI System",
+      allPdfFooterRight: "一次情報根拠: 有価証券報告書 / SEC Form 10-K / 決算短信 / 投資判断非推奨",
+      generatingPdf: "⏳ PDF生成中...",
+      downloadedPdf: "✅ PDF Downloaded!",
+      generatingAllPdf: "⏳ 全調査PDF生成中...",
+      downloadedAllPdf: "✅ All PDF Downloaded!",
+      notReadyAlert: "レポートがまだ生成されていません。企業を分析してください。",
+      errorAlert: "PDF生成中にエラーが発生しました。印刷ダイアログを使用します。",
+      copiedAlert: "📋 クリップボードに全調査結果Markdownをコピーしました！"
+    },
+    'zh-CN': {
+      titlePrefix: "【全景机构级财务调查档案】",
+      pubDate: "发布日期",
+      std: "会计准则",
+      curr: "报告货币",
+      sector: "行业分类",
+      healthScore: "财务健康度评分",
+      healthRating: "强投资级 (Strong Investment Grade)",
+      disclaimer: "合规免责声明: 本调查档案基于官方法定披露与一手财报进行客观财务分析与事实梳理，不构成任何投资建议、买卖要约或证券分析意见。",
+      sec1Title: "1. 执行层核心财务KPI全景摘要",
+      thMetric: "指标项目",
+      thLatest: "最新数值",
+      thYoY: "同比 / 评价",
+      thImp: "财务与战略启示",
+      revName: "营业收入 (Top-Line Revenue)",
+      revImp: "核心业务规模与主营增长动能",
+      opmName: "营业利润率 (Operating Margin)",
+      opmImp: "主业附加值创造力与成本管控架构",
+      roeName: "净资产收益率 (ROE - 杜邦)",
+      roeEval: "高资本效率",
+      roeImp: "股东权益综合投资回报水平",
+      roicName: "投入资本回报率 (ROIC vs WACC)",
+      roicEval: "vs WACC (8.5%)",
+      roicImp: "超越资金成本的经济增加值 (EVA) 空间",
+      fcfName: "自由现金流 (FCF)",
+      fcfEval: "经营CF - 资本开支",
+      fcfImp: "主营业务活动内生自由现金创造力",
+      cccName: "现金循环周期 (CCC)",
+      cccEval: "营运资金效率",
+      cccImp: "从采购付款到存货周转及销售回款的资金占用天数",
+      netDebtName: "净有息负债倍率 (Net Debt / EBITDA)",
+      netDebtEval: "安全区间 (<2.0x)",
+      netDebtImp: "偿债缓冲空间、去杠杆能力与财务安全性",
+      sec2Title: "2. 资本效率驱动归因（三阶段杜邦分析树）",
+      dupontFormula: "- **ROE ({roe}%)** = 销售净利率 ({nm}%) × 总资产周转率 ({at}次) × 权益乘数 ({em}倍)",
+      dupont1: "1. **销售净利率 (Net Margin)**: 净利润占总收入比重，反映产品定价权与成本控制。",
+      dupont2: "2. **总资产周转率 (Asset Turnover)**: 资产变现与营运效率，反映资金周转速度。",
+      dupont3: "3. **权益乘数 (Financial Leverage)**: 总资产相对于净资产倍数，反映财务杠杆与资本结构。",
+      sec3Title: "3. 营运资本循环周期深度透视（CCC分解）",
+      cccFormula: "- **现金循环周期 CCC ({ccc}天)** = 应收账款周转天数 DSO (+{dso}天) + 存货周转天数 DIO (+{dio}天) − 应付账款周转天数 DPO (-{dpo}天)",
+      cccTakeaway: "超低或负现金循环周期表明公司依托极强的产业链议价能力与供应商信用账期，构建了无需外部短期借贷即可支持营收扩张的「自主融资型商业模式」。",
+      sec4Title: "4. 自律型AI ReAct推演过程与一手披露核验日志",
+      reactDone: "*(ReAct 推演日志流已全部捕获)*",
+      sec5Title: "5. 同业对标多维横向比较矩阵",
+      thBenchmarkMetric: "指标 / 业务维度",
+      thBenchmarkImp: "行业竞争格局启示",
+      sec6Title: "6. 风险评估与早期预警指标 (EWI) 矩阵",
+      thRiskName: "风险要素",
+      thRiskImpact: "严重程度 (Impact)",
+      thRiskProb: "发生概率 (Prob)",
+      thRiskEwi: "早期预警指标 (EWI)",
+      thRiskDoc: "监管披露监控来源",
+      sec7Title: "7. 机构投资者完全财务分析报告（A〜H标准规范）",
+      compiledBy: "Report Compiled by FinReAct Agentic AI System. All data cross-referenced with primary disclosures.",
+      dateLocale: "zh-CN",
+      timeOptions: { hour: '2-digit', minute: '2-digit' },
+      execPdfHeader: "FinReAct 机构级企业财务调查报告",
+      execPdfDatePrefix: "报告日期: ",
+      execPdfSubtitle: "企业三张财务报表・资本效率・同业对标全景调查报告（A〜H标准规范）",
+      execPdfFooterLeft: "内部绝密 (Confidential) — 由 FinReAct Agentic AI 系统生成",
+      execPdfFooterRight: "一手公开披露依据: 官方年报 / SEC 10-K / 交易所法定披露 / 非投资建议",
+      allPdfHeader: "FinReAct 全景机构级财务调查档案 (Full Dossier)",
+      allPdfDatePrefix: "报告日期: ",
+      allPdfSubtitle: "三张财务报表・AI推演日志・杜邦分析・营运资金周期・同业对标・风险矩阵 完整调查包",
+      allPdfFooterLeft: "内部绝密 (Confidential) — 由 FinReAct Agentic AI 系统生成",
+      allPdfFooterRight: "一手公开披露依据: 官方年报 / SEC 10-K / 交易所法定披露 / 非投资建议",
+      generatingPdf: "⏳ PDF生成中...",
+      downloadedPdf: "✅ PDF 下载完成！",
+      generatingAllPdf: "⏳ 全档案PDF生成中...",
+      downloadedAllPdf: "✅ 全档案PDF下载完成！",
+      notReadyAlert: "报告尚未生成，请先执行企业财务分析。",
+      errorAlert: "PDF生成失败，将启用系统打印对话框。",
+      copiedAlert: "📋 已复制全景财务调查Markdown至剪贴板！"
+    },
+    'zh-TW': {
+      titlePrefix: "【全景機構級財務調查檔案】",
+      pubDate: "發布日期",
+      std: "會計準則",
+      curr: "報告貨幣",
+      sector: "行業分類",
+      healthScore: "財務健康度評分",
+      healthRating: "強投資級 (Strong Investment Grade)",
+      disclaimer: "合規免責聲明: 本調查檔案基於官方法定披露與一手財報進行客觀財務分析與事實梳理，不構成任何投資建議、買賣要約或證券分析意見。",
+      sec1Title: "1. 執行層核心財務KPI全景摘要",
+      thMetric: "指標項目",
+      thLatest: "最新數值",
+      thYoY: "同比 / 評價",
+      thImp: "財務與戰略啟示",
+      revName: "營業收入 (Top-Line Revenue)",
+      revImp: "核心業務規模與主營增長動能",
+      opmName: "營業利潤率 (Operating Margin)",
+      opmImp: "主業附加值創造力與成本管控架構",
+      roeName: "淨資產收益率 (ROE - 杜邦)",
+      roeEval: "高資本效率",
+      roeImp: "股東權益綜合投資回報水平",
+      roicName: "投入資本回報率 (ROIC vs WACC)",
+      roicEval: "vs WACC (8.5%)",
+      roicImp: "超越資金成本的經濟增加值 (EVA) 空間",
+      fcfName: "自由現金流 (FCF)",
+      fcfEval: "經營CF - 資本開支",
+      fcfImp: "主營業務活動內生自由現金創造力",
+      cccName: "現金循環週期 (CCC)",
+      cccEval: "營運資金效率",
+      cccImp: "從採購付款到存貨週轉及銷售回款的資金占用天數",
+      netDebtName: "淨有息負債倍率 (Net Debt / EBITDA)",
+      netDebtEval: "安全區間 (<2.0x)",
+      netDebtImp: "償債緩衝空間、去槓桿能力與財務安全性",
+      sec2Title: "2. 資本效率驅動歸因（三階段杜邦分析樹）",
+      dupontFormula: "- **ROE ({roe}%)** = 銷售淨利率 ({nm}%) × 總資產週轉率 ({at}次) × 權益乘數 ({em}倍)",
+      dupont1: "1. **銷售淨利率 (Net Margin)**: 淨利潤占總收入比重，反映產品定價權與成本控制。",
+      dupont2: "2. **總資產週轉率 (Asset Turnover)**: 資產變現與營運效率，反映資金週轉速度。",
+      dupont3: "3. **權益乘數 (Financial Leverage)**: 總資產相對於淨資產倍數，反映財務槓桿與資本結構。",
+      sec3Title: "3. 營運資本循環週期深度透視（CCC分解）",
+      cccFormula: "- **現金循環週期 CCC ({ccc}天)** = 應收賬款週轉天數 DSO (+{dso}天) + 存貨週轉天數 DIO (+{dio}天) − 應付賬款週轉天數 DPO (-{dpo}天)",
+      cccTakeaway: "超低或負現金循環週期表明公司依托極強的產業鏈議價能力與供應商信用賬期，構建了無需外部短期借貸即可支持營收擴張的「自主融資型商業模式」。",
+      sec4Title: "4. 自律型AI ReAct推演過程與一手披露核驗日誌",
+      reactDone: "*(ReAct 推演日誌流已全部捕獲)*",
+      sec5Title: "5. 同業對標多維橫向比較矩陣",
+      thBenchmarkMetric: "指標 / 業務維度",
+      thBenchmarkImp: "行業競爭格局啟示",
+      sec6Title: "6. 風險評估與早期預警指標 (EWI) 矩陣",
+      thRiskName: "風險要素",
+      thRiskImpact: "嚴重程度 (Impact)",
+      thRiskProb: "發生概率 (Prob)",
+      thRiskEwi: "早期預警指標 (EWI)",
+      thRiskDoc: "監管披露監控來源",
+      sec7Title: "7. 機構投資者完全財務分析報告（A〜H標準規範）",
+      compiledBy: "Report Compiled by FinReAct Agentic AI System. All data cross-referenced with primary disclosures.",
+      dateLocale: "zh-TW",
+      timeOptions: { hour: '2-digit', minute: '2-digit' },
+      execPdfHeader: "FinReAct 機構級企業財務調查報告",
+      execPdfDatePrefix: "報告日期: ",
+      execPdfSubtitle: "企業三張財務報表・資本效率・同業對標全景調查報告（A〜H標準規範）",
+      execPdfFooterLeft: "內部絕密 (Confidential) — 由 FinReAct Agentic AI 系統生成",
+      execPdfFooterRight: "一手公開披露依據: 官方年報 / SEC 10-K / 交易所法定披露 / 非投資建議",
+      allPdfHeader: "FinReAct 全景機構級財務調查檔案 (Full Dossier)",
+      allPdfDatePrefix: "報告日期: ",
+      allPdfSubtitle: "三張財務報表・AI推演日誌・杜邦分析・營運資金週期・同業對標・風險矩陣 完整調查包",
+      allPdfFooterLeft: "內部絕密 (Confidential) — 由 FinReAct Agentic AI 系統生成",
+      allPdfFooterRight: "一手公開披露依據: 官方年報 / SEC 10-K / 交易所法定披露 / 非投資建議",
+      generatingPdf: "⏳ PDF生成中...",
+      downloadedPdf: "✅ PDF 下載完成！",
+      generatingAllPdf: "⏳ 全檔案PDF生成中...",
+      downloadedAllPdf: "✅ 全檔案PDF下載完成！",
+      notReadyAlert: "報告尚未生成，請先執行企業財務分析。",
+      errorAlert: "PDF生成失敗，將啟用系統列印對話方塊。",
+      copiedAlert: "📋 已複製全景財務調查Markdown至剪貼簿！"
+    },
+    fr: {
+      titlePrefix: "[Dossier Complet d'Intelligence Financière]",
+      pubDate: "Date de Publication",
+      std: "Norme Comptable",
+      curr: "Devise Déclarée",
+      sector: "Secteur",
+      healthScore: "Score de Santé Financière",
+      healthRating: "Catégorie Investissement Robuste",
+      disclaimer: "Avertissement Réglementaire: Ce dossier représente une analyse financière d'entreprise objective et une recherche factuelle basée strictement sur des dépôts réglementaires officiels (SEC, HKEX, EDINET); il ne constitue pas un conseil en investissement.",
+      sec1Title: "1. Synthèse Exécutive des Principaux KPI Financiers",
+      thMetric: "Indicateur",
+      thLatest: "Dernière Valeur",
+      thYoY: "Variation / Éval.",
+      thImp: "Implication Financière",
+      revName: "Chiffre d'Affaires (Top-Line)",
+      revImp: "Expansion commerciale et dynamique des activités clés",
+      opmName: "Marge Opérationnelle (Marge d'EBIT)",
+      opmImp: "Capacité bénéficiaire intrinsèque & structure des coûts",
+      roeName: "Rentabilité des Capitaux Propres (ROE)",
+      roeEval: "Haute Efficacité",
+      roeImp: "Rendement global sur les capitaux des actionnaires",
+      roicName: "Rentabilité du Capital Investi (ROIC)",
+      roicEval: "vs CMPC (8.5%)",
+      roicImp: "Création de Valeur Économique Ajoutée (EVA)",
+      fcfName: "Flux de Trésorerie Disponible (FCF)",
+      fcfEval: "Cash d'Exploit. - Capex",
+      fcfImp: "Génération nette de liquidités par les opérations",
+      cccName: "Cycle de Conversion de Trésorerie (CCC)",
+      cccEval: "Efficacité BFR",
+      cccImp: "Jours d'immobilisation de trésorerie dans le cycle d'exploitation",
+      netDebtName: "Dette Nette / EBITDA",
+      netDebtEval: "Niveau Sain (<2.0x)",
+      netDebtImp: "Capacité de désendettement et solvabilité",
+      sec2Title: "2. Décomposition de l'Efficacité du Capital (Arbre de DuPont à 3 Étapes)",
+      dupontFormula: "- **ROE ({roe}%)** = Marge Nette ({nm}%) × Rotation des Actifs ({at}x) × Levier Financier ({em}x)",
+      dupont1: "1. **Marge Nette**: Part du bénéfice net dans le CA. Reflète le pouvoir de fixation des prix.",
+      dupont2: "2. **Rotation des Actifs**: Vélocité et efficacité de conversion des actifs en chiffre d'affaires.",
+      dupont3: "3. **Levier Financier (Multiplicateur d'Avoir)**: Ratio actifs totaux sur capitaux propres. Reflète la structure financière.",
+      sec3Title: "3. Analyse Détaillée du Cycle de BFR (Décomposition du CCC)",
+      cccFormula: "- **Cycle de Conversion de Trésorerie CCC ({ccc} Jours)** = Délai Recouvrement Clients DSO (+{dso} Jours) + Délai Rotation Stocks DIO (+{dio} Jours) − Délai Paiement Fournisseurs DPO (-{dpo} Jours)",
+      cccTakeaway: "Un cycle de conversion de trésorerie ultra-court ou négatif traduit un puissant pouvoir de négociation fournisseurs, permettant un modèle d'auto-financement sans recours au crédit bancaire à court terme.",
+      sec4Title: "4. Processus d'Inférence IA ReAct & Journaux de Vérification Primaire",
+      reactDone: "*(Flux des journaux ReAct entièrement capturé)*",
+      sec5Title: "5. Matrice Comparative Sectorielle & Benchmark Pairs",
+      thBenchmarkMetric: "Métrique / Dimension",
+      thBenchmarkImp: "Implications Sectorielles",
+      sec6Title: "6. Matrice d'Évaluation des Risques & Indicateurs d'Alerte Précoce (EWI)",
+      thRiskName: "Facteur de Risque",
+      thRiskImpact: "Gravité (Impact)",
+      thRiskProb: "Probabilité",
+      thRiskEwi: "Indicateur d'Alerte (EWI)",
+      thRiskDoc: "Source Réglementaire",
+      sec7Title: "7. Rapport Financier Institutionnel Complet (Norme A〜H)",
+      compiledBy: "Report Compiled by FinReAct Agentic AI System. All data cross-referenced with primary disclosures.",
+      dateLocale: "fr-FR",
+      timeOptions: { hour: '2-digit', minute: '2-digit' },
+      execPdfHeader: "FinReAct Rapport de Recherche Institutionnel",
+      execPdfDatePrefix: "Date: ",
+      execPdfSubtitle: "Rapport d'Analyse Financière Institutionnelle (Norme Standard A~H)",
+      execPdfFooterLeft: "Confidentiel — Généré par le Système FinReAct Agentic AI",
+      execPdfFooterRight: "Sources Primaires: SEC 10-K / EDINET / Rapports Annuels / Avis non financier",
+      allPdfHeader: "FinReAct Dossier Complet d'Intelligence Financière",
+      allPdfDatePrefix: "Date: ",
+      allPdfSubtitle: "États Financiers, Journaux d'Inférence IA, Décomposition DuPont, CCC, Benchmarks et Matrice des Risques",
+      allPdfFooterLeft: "Confidentiel — Généré par le Système FinReAct Agentic AI",
+      allPdfFooterRight: "Sources Primaires: SEC 10-K / EDINET / Rapports Annuels / Avis non financier",
+      generatingPdf: "⏳ Génération PDF...",
+      downloadedPdf: "✅ PDF Téléchargé !",
+      generatingAllPdf: "⏳ Génération Dossier PDF...",
+      downloadedAllPdf: "✅ Dossier PDF Téléchargé !",
+      notReadyAlert: "Le rapport n'est pas encore généré. Veuillez d'abord analyser une entreprise.",
+      errorAlert: "Erreur lors de la génération du PDF. Ouverture de la boîte de dialogue d'impression.",
+      copiedAlert: "📋 Dossier d'analyse copié dans le presse-papiers !"
+    }
+  };
+
   async function downloadExecutivePdf() {
+    const lang = (typeof getCurrentLanguage === 'function') ? getCurrentLanguage() : 'ja';
+    const D = I18N_DOSSIER[lang] || I18N_DOSSIER['ja'];
+
     if (!currentReportMarkdown) {
-      alert('レポートがまだ生成されていません。企業を分析してください。');
+      alert(D.notReadyAlert);
       return;
     }
 
     const origText = downloadPdfBtn?.textContent || '📄 Quick PDF';
     if (downloadPdfBtn) {
-      downloadPdfBtn.textContent = '⏳ PDF生成中...';
+      downloadPdfBtn.textContent = D.generatingPdf;
       downloadPdfBtn.disabled = true;
     }
 
@@ -726,7 +1108,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const ticker = (document.getElementById('dispTicker')?.textContent || '').trim();
       const standard = (document.getElementById('dispStandard')?.textContent || '').trim();
       const currency = (document.getElementById('dispCurrency')?.textContent || '').trim();
-      const dateStr = new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' });
+      const dateStr = new Date().toLocaleDateString(D.dateLocale || 'ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' });
 
       // レポート本文HTMLの変換
       const reportHtml = typeof marked !== 'undefined' ? marked.parse(currentReportMarkdown) : `<pre>${currentReportMarkdown}</pre>`;
@@ -736,25 +1118,25 @@ document.addEventListener('DOMContentLoaded', () => {
       pdfContainer.className = 'pdf-export-container';
       pdfContainer.innerHTML = `
         <div class="pdf-header-top">
-          <span class="pdf-logo">FinReAct Institutional Research Report</span>
-          <span class="pdf-date">発行日: ${dateStr}</span>
+          <span class="pdf-logo">${D.execPdfHeader}</span>
+          <span class="pdf-date">${D.execPdfDatePrefix}${dateStr}</span>
         </div>
         <div class="pdf-title-box">
           <h1>${companyName} ${ticker ? `(${ticker})` : ''}</h1>
-          <p class="pdf-subtitle">企業財務三表・資本効率・競合ベンチマーク統合調査報告書（A〜H標準規格） | ${standard} | ${currency}</p>
+          <p class="pdf-subtitle">${D.execPdfSubtitle} | ${standard} | ${currency}</p>
         </div>
         <div class="pdf-body">
           ${reportHtml}
         </div>
         <div class="pdf-footer">
-          <span>厳秘 (Confidential) — Generated by FinReAct Agentic AI System</span>
-          <span>一次情報根拠: 有価証券報告書 / SEC Form 10-K / 決算短信 / 投資判断非推奨</span>
+          <span>${D.execPdfFooterLeft}</span>
+          <span>${D.execPdfFooterRight}</span>
         </div>
       `;
 
       document.body.appendChild(pdfContainer);
 
-      const safeFilename = `Financial_Report_${companyName.replace(/[^a-zA-Z0-9\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF]/g, '_')}_${Date.now()}.pdf`;
+      const safeFilename = `FinReAct_Executive_Report_${companyName.replace(/[^a-zA-Z0-9\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF]/g, '_')}_${Date.now()}.pdf`;
 
       if (typeof html2pdf !== 'undefined') {
         const opt = {
@@ -774,13 +1156,13 @@ document.addEventListener('DOMContentLoaded', () => {
       document.body.removeChild(pdfContainer);
 
       if (downloadPdfBtn) {
-        downloadPdfBtn.textContent = '✅ PDF Downloaded!';
+        downloadPdfBtn.textContent = D.downloadedPdf;
         setTimeout(() => downloadPdfBtn.textContent = origText, 2500);
       }
 
     } catch (err) {
       console.error('PDF generation error:', err);
-      alert('PDF生成中にエラーが発生しました。印刷ダイアログを使用します。');
+      alert(D.errorAlert);
       window.print();
       if (downloadPdfBtn) downloadPdfBtn.textContent = origText;
     } finally {
@@ -793,52 +1175,64 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // -------------------------------------------------------------------------
-  // Complete Intelligence Dossier (All Results) Generators
+  // Complete Intelligence Dossier (All Results) Multilingual Generator
   // -------------------------------------------------------------------------
-  function buildAllResultsMarkdown() {
+  function buildAllResultsMarkdown(targetLang = null) {
     if (!currentAnalysisData && !currentReportMarkdown) return '';
+    const lang = targetLang || ((typeof getCurrentLanguage === 'function') ? getCurrentLanguage() : 'ja');
+    const D = I18N_DOSSIER[lang] || I18N_DOSSIER['ja'];
+
     const meta = currentAnalysisData?.meta || {};
     const kpis = currentAnalysisData?.kpis || {};
     const dupont = (currentAnalysisData?.charts && currentAnalysisData.charts.dupont_latest) || {};
     const ccc = (currentAnalysisData?.charts && currentAnalysisData.charts.ccc_latest) || {};
-    const dateStr = new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' });
-    const timeStr = new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+    const dateStr = new Date().toLocaleDateString(D.dateLocale || 'ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' });
+    const timeStr = new Date().toLocaleTimeString(D.dateLocale || 'ja-JP', D.timeOptions || { hour: '2-digit', minute: '2-digit' });
 
-    let md = `# 【総合調査パッケージ】${meta.company_name || '対象企業'} (${meta.ticker || 'N/A'})\n\n`;
-    md += `**発行日時**: ${dateStr} ${timeStr} | **会計基準**: ${meta.standard || 'IFRS'} | **報告通貨**: ${meta.currency || 'USD'} | **セクター**: ${meta.sector || 'General'}\n`;
-    md += `**財務健全性スコア**: **${meta.health_score || 85} / 100** (Strong Investment Grade)\n\n`;
-    md += `> ⚠️ **免責事項・留意事項**: 本調査パッケージは公開情報・法定開示書類に基づく客観的財務分析であり、有価証券の売買推奨や投資助言ではありません。\n\n`;
+    let md = `# ${D.titlePrefix} ${meta.company_name || 'Target Enterprise'} (${meta.ticker || 'N/A'})\n\n`;
+    md += `**${D.pubDate}**: ${dateStr} ${timeStr} | **${D.std}**: ${meta.standard || 'IFRS'} | **${D.curr}**: ${meta.currency || 'USD'} | **${D.sector}**: ${meta.sector || 'General'}\n`;
+    md += `**${D.healthScore}**: **${meta.health_score || 85} / 100** (${D.healthRating})\n\n`;
+    md += `> ⚠️ **${D.disclaimer}**\n\n`;
 
     // 1. Executive KPIs
-    md += `## 1. エグゼクティブ主要財務KPIサマリー\n\n`;
-    md += `| 指標項目 | 最新値 | 前年比 / 評価 | 財務インプリケーション |\n`;
+    md += `## ${D.sec1Title}\n\n`;
+    md += `| ${D.thMetric} | ${D.thLatest} | ${D.thYoY} | ${D.thImp} |\n`;
     md += `| :--- | :--- | :--- | :--- |\n`;
-    md += `| **売上高 (Latest Revenue)** | **${kpis.revenue || '-'}** | ${kpis.revenue_yoy || '-'} YoY | コア事業および成長領域の拡大状況 |\n`;
-    md += `| **営業利益率 (Operating Margin)** | **${kpis.opm || '-'}** | ${kpis.opm_diff || '-'} | 本業の付加価値創出力・コスト構造 |\n`;
-    md += `| **自己資本利益率 (ROE)** | **${kpis.roe || '-'}** | 効率区分 | 株主資本に対する総合利回り |\n`;
-    md += `| **投下資本利益率 (ROIC)** | **${kpis.roic || '-'}** | vs WACC (8.5%) | 投下資本に対する超過付加価値 (EVA) |\n`;
-    md += `| **フリーキャッシュフロー (FCF)** | **${kpis.fcf || '-'}** | 営業CF - Capex | 事業活動からの純現金創出力 |\n`;
-    md += `| **現金循環日数 (CCC)** | **${kpis.ccc || '-'}** | 運転資本効率 | 仕入〜在庫〜売掛の資金拘束日数 |\n`;
-    md += `| **Net Debt / EBITDA** | **${kpis.net_debt_ebitda || '-'}** | 健全水準 (<2.0x) | 有利子負債返済余力・安全性 |\n\n`;
+    md += `| **${D.revName}** | **${kpis.revenue || '-'}** | ${kpis.revenue_yoy || '-'} YoY | ${D.revImp} |\n`;
+    md += `| **${D.opmName}** | **${kpis.opm || '-'}** | ${kpis.opm_diff || '-'} | ${D.opmImp} |\n`;
+    md += `| **${D.roeName}** | **${kpis.roe || '-'}** | ${D.roeEval} | ${D.roeImp} |\n`;
+    md += `| **${D.roicName}** | **${kpis.roic || '-'}** | ${D.roicEval} | ${D.roicImp} |\n`;
+    md += `| **${D.fcfName}** | **${kpis.fcf || '-'}** | ${D.fcfEval} | ${D.fcfImp} |\n`;
+    md += `| **${D.cccName}** | **${kpis.ccc || '-'}** | ${D.cccEval} | ${D.cccImp} |\n`;
+    md += `| **${D.netDebtName}** | **${kpis.net_debt_ebitda || '-'}** | ${D.netDebtEval} | ${D.netDebtImp} |\n\n`;
 
     // 2. DuPont Tree
-    md += `## 2. 資本効率要因分解（3段階デュポンツリー）\n\n`;
-    md += `- **ROE (${dupont.roe || 0}%)** = 売上高純利益率 (${dupont.net_margin || 0}%) × 総資産回転率 (${dupont.asset_turnover || 0}回) × 財務レバレッジ (${dupont.equity_multiplier || 0}倍)\n\n`;
-    md += `1. **純利益率 (Net Margin)**: 売上高に対する最終利益の割合。収益性および価格決定力を反映。\n`;
-    md += `2. **総資産回転率 (Asset Turnover)**: 保有資産をどれだけ効率的に売上に転換しているかの事業回転速度。\n`;
-    md += `3. **財務レバレッジ (Equity Multiplier)**: 自己資本に対する総資産の倍率。自己株式取得や外部負債活用状況。\n\n`;
+    md += `## ${D.sec2Title}\n\n`;
+    md += D.dupontFormula
+      .replace('{roe}', dupont.roe || 0)
+      .replace('{nm}', dupont.net_margin || 0)
+      .replace('{at}', dupont.asset_turnover || 0)
+      .replace('{em}', dupont.equity_multiplier || 0) + '\n\n';
+    md += `${D.dupont1}\n`;
+    md += `${D.dupont2}\n`;
+    md += `${D.dupont3}\n\n`;
 
     // 3. CCC Breakdown
-    md += `## 3. 運転資本サイクル詳細分析（CCCブレイクダウン）\n\n`;
-    md += `- **現金循環日数 CCC (${ccc.ccc || 0}日)** = 売上債権回収日数 DSO (+${ccc.dso || 0}日) + 棚卸在庫滞留日数 DIO (+${ccc.dio || 0}日) − 仕入先支払猶予日数 DPO (-${ccc.dpo || 0}日)\n\n`;
-    md += `現金循環日数が極低水準またはマイナスの場合、強力なバイイングパワーと前受金活用により、売上拡大局面でも追加借入が不要な「自己金融型ビジネスモデル」を実現しています。\n\n`;
+    md += `## ${D.sec3Title}\n\n`;
+    md += D.cccFormula
+      .replace('{ccc}', ccc.ccc || 0)
+      .replace('{dso}', ccc.dso || 0)
+      .replace('{dio}', ccc.dio || 0)
+      .replace('{dpo}', ccc.dpo || 0) + '\n\n';
+    md += `${D.cccTakeaway}\n\n`;
 
     // 4. ReAct Autonomous Reasoning Logs
-    md += `## 4. 自律型AI ReAct推論プロセス & 一次開示検証ログ\n\n`;
+    md += `## ${D.sec4Title}\n\n`;
     if (currentReactLogs && currentReactLogs.length > 0) {
+      const thoughtLabel = lang === 'en' ? 'Thought' : (lang === 'fr' ? 'Pensée' : (lang === 'zh-CN' || lang === 'zh-TW' ? '推演步骤' : '推論'));
       currentReactLogs.forEach(log => {
         if (log.type === 'thought') {
-          md += `### 🧠 [Thought ${log.step}] ${log.title || '推論'}\n${log.content}\n\n`;
+          md += `### 🧠 [${thoughtLabel} ${log.step}] ${log.title || 'Reasoning'}\n${log.content}\n\n`;
         } else if (log.type === 'action') {
           md += `> ⚡ **Action**: \`${log.tool}\`\n\`\`\`json\n${JSON.stringify(log.parameters, null, 2)}\n\`\`\`\n\n`;
         } else if (log.type === 'observation') {
@@ -846,14 +1240,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       });
     } else {
-      md += `*(ReActストリームログ取得完了)*\n\n`;
+      md += `${D.reactDone}\n\n`;
     }
 
     // 5. Peer Benchmark
     if (currentAnalysisData?.peer_benchmark) {
       const bm = currentAnalysisData.peer_benchmark;
-      md += `## 5. 競合ベンチマーク多面比較マトリクス\n\n`;
-      md += `| 指標 / カテゴリ | ${bm.target_head} | ${bm.peer1_head} | ${bm.peer2_head} | 業界インプリケーション |\n`;
+      md += `## ${D.sec5Title}\n\n`;
+      md += `| ${D.thBenchmarkMetric} | ${bm.target_head} | ${bm.peer1_head} | ${bm.peer2_head} | ${D.thBenchmarkImp} |\n`;
       md += `| :--- | :--- | :--- | :--- | :--- |\n`;
       if (Array.isArray(bm.rows)) {
         bm.rows.forEach(r => {
@@ -865,8 +1259,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 6. Risks & EWI
     if (currentAnalysisData?.risks && Array.isArray(currentAnalysisData.risks)) {
-      md += `## 6. リスク評価 & 早期警戒指標（EWI）マトリクス\n\n`;
-      md += `| リスク要因 | 重要度 (Impact) | 発生確率 (Prob) | 早期警戒指標 (EWI) | 監視対象開示書類 |\n`;
+      md += `## ${D.sec6Title}\n\n`;
+      md += `| ${D.thRiskName} | ${D.thRiskImpact} | ${D.thRiskProb} | ${D.thRiskEwi} | ${D.thRiskDoc} |\n`;
       md += `| :--- | :--- | :--- | :--- | :--- |\n`;
       currentAnalysisData.risks.forEach(r => {
         md += `| **${r.name}** | ${r.impact} | ${r.prob} | \`${r.ewi}\` | ${r.doc} |\n`;
@@ -875,17 +1269,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 7. Full Institutional Report (A〜H)
-    md += `## 7. 機関投資家向け完全財務分析レポート（A〜H標準規格）\n\n`;
+    md += `## ${D.sec7Title}\n\n`;
     md += currentReportMarkdown || '';
-    md += `\n\n---\n*Report Compiled by FinReAct Agentic AI System. All data cross-referenced with primary disclosures.*\n`;
+    md += `\n\n---\n*${D.compiledBy}*\n`;
 
     return md;
   }
 
   // 1. Download All Results (PDF)
   async function downloadAllResultsPdf() {
+    const lang = (typeof getCurrentLanguage === 'function') ? getCurrentLanguage() : 'ja';
+    const D = I18N_DOSSIER[lang] || I18N_DOSSIER['ja'];
+
     if (!currentAnalysisData && !currentReportMarkdown) {
-      alert('レポートがまだ生成されていません。企業を分析してください。');
+      alert(D.notReadyAlert);
       return;
     }
 
@@ -896,17 +1293,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     triggerBtns.forEach(b => {
       b.dataset.origText = b.textContent;
-      b.textContent = '⏳ 全調査PDF生成中...';
+      b.textContent = D.generatingAllPdf;
       b.disabled = true;
     });
 
     try {
-      const fullMd = buildAllResultsMarkdown();
+      const fullMd = buildAllResultsMarkdown(lang);
       const companyName = (currentAnalysisData?.meta?.company_name || 'Company').trim();
       const ticker = (currentAnalysisData?.meta?.ticker || '').trim();
       const standard = (currentAnalysisData?.meta?.standard || '').trim();
       const currency = (currentAnalysisData?.meta?.currency || '').trim();
-      const dateStr = new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' });
+      const dateStr = new Date().toLocaleDateString(D.dateLocale || 'ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' });
 
       const reportHtml = typeof marked !== 'undefined' ? marked.parse(fullMd) : `<pre>${fullMd}</pre>`;
 
@@ -914,19 +1311,19 @@ document.addEventListener('DOMContentLoaded', () => {
       pdfContainer.className = 'pdf-export-container';
       pdfContainer.innerHTML = `
         <div class="pdf-header-top">
-          <span class="pdf-logo">FinReAct Comprehensive Intelligence Dossier</span>
-          <span class="pdf-date">発行日: ${dateStr}</span>
+          <span class="pdf-logo">${D.allPdfHeader}</span>
+          <span class="pdf-date">${D.allPdfDatePrefix}${dateStr}</span>
         </div>
         <div class="pdf-title-box">
           <h1>${companyName} ${ticker ? `(${ticker})` : ''}</h1>
-          <p class="pdf-subtitle">企業財務三表・AI推論ログ・デュポン分解・CCC・競合比較・リスク評価 完全調査パッケージ | ${standard} | ${currency}</p>
+          <p class="pdf-subtitle">${D.allPdfSubtitle} | ${standard} | ${currency}</p>
         </div>
         <div class="pdf-body">
           ${reportHtml}
         </div>
         <div class="pdf-footer">
-          <span>厳秘 (Confidential) — Generated by FinReAct Agentic AI System</span>
-          <span>一次情報根拠: 有価証券報告書 / SEC Form 10-K / 決算短信 / 投資判断非推奨</span>
+          <span>${D.allPdfFooterLeft}</span>
+          <span>${D.allPdfFooterRight}</span>
         </div>
       `;
 
@@ -952,7 +1349,7 @@ document.addEventListener('DOMContentLoaded', () => {
       document.body.removeChild(pdfContainer);
 
       triggerBtns.forEach(b => {
-        b.textContent = '✅ All PDF Downloaded!';
+        b.textContent = D.downloadedAllPdf;
         setTimeout(() => {
           b.textContent = b.dataset.origText || '📦 Download All Results (PDF)';
           b.disabled = false;
@@ -961,7 +1358,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     } catch (err) {
       console.error('All-Results PDF export error:', err);
-      alert('全結果PDF生成中にエラーが発生しました。印刷ダイアログを使用します。');
+      alert(D.errorAlert);
       window.print();
       triggerBtns.forEach(b => {
         b.textContent = b.dataset.origText || '📦 Download All Results (PDF)';
@@ -972,17 +1369,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 2. Download All Results (Markdown)
   function downloadAllResultsMarkdown() {
+    const lang = (typeof getCurrentLanguage === 'function') ? getCurrentLanguage() : 'ja';
+    const D = I18N_DOSSIER[lang] || I18N_DOSSIER['ja'];
+
     if (!currentAnalysisData && !currentReportMarkdown) {
-      alert('レポートがまだ生成されていません。企業を分析してください。');
+      alert(D.notReadyAlert);
       return;
     }
-    const fullMd = buildAllResultsMarkdown();
+    const fullMd = buildAllResultsMarkdown(lang);
     const companyName = (currentAnalysisData?.meta?.company_name || 'Company').trim();
     const blob = new Blob([fullMd], { type: 'text/markdown;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `FinReAct_Full_Dossier_${companyName.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}.md`;
+    a.download = `FinReAct_Full_Dossier_${companyName.replace(/[^a-zA-Z0-9\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF]/g, '_')}_${Date.now()}.md`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -991,8 +1391,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 3. Download All Results (Raw JSON)
   function downloadAllResultsJson() {
+    const lang = (typeof getCurrentLanguage === 'function') ? getCurrentLanguage() : 'ja';
+    const D = I18N_DOSSIER[lang] || I18N_DOSSIER['ja'];
+
     if (!currentAnalysisData) {
-      alert('調査データがまだ生成されていません。企業を分析してください。');
+      alert(D.notReadyAlert);
       return;
     }
     const companyName = (currentAnalysisData?.meta?.company_name || 'Company').trim();
@@ -1015,7 +1418,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `FinReAct_Dataset_${companyName.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}.json`;
+    a.download = `FinReAct_Dataset_${companyName.replace(/[^a-zA-Z0-9\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF]/g, '_')}_${Date.now()}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -1122,13 +1525,15 @@ document.addEventListener('DOMContentLoaded', () => {
     optCopyClipboard.addEventListener('click', () => {
       unifiedExportWrapper?.classList.remove('active');
       unifiedExportBtn?.setAttribute('aria-expanded', 'false');
-      const textToCopy = buildAllResultsMarkdown() || currentReportMarkdown;
+      const lang = (typeof getCurrentLanguage === 'function') ? getCurrentLanguage() : 'ja';
+      const D = I18N_DOSSIER[lang] || I18N_DOSSIER['ja'];
+      const textToCopy = buildAllResultsMarkdown(lang) || currentReportMarkdown;
       if (!textToCopy) {
-        alert('レポートがまだ生成されていません。');
+        alert(D.notReadyAlert);
         return;
       }
       navigator.clipboard.writeText(textToCopy).then(() => {
-        alert('📋 クリップボードに全調査結果Markdownをコピーしました！');
+        alert(D.copiedAlert);
       }).catch(err => {
         console.error('Clipboard copy failed:', err);
       });
