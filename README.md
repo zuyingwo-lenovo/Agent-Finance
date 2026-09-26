@@ -1,64 +1,80 @@
 # FinReAct Intelligence Platform
-## 公式開示情報に基づく企業財務調査・分析 AIソリューション (Corporate Finance Analyst AI)
+## Autonomous Corporate Financial Research & Analysis AI Grounded in Statutory Disclosures
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 [![Google Gemini](https://img.shields.io/badge/Google_Gemini-2.5--Flash%20%7C%202.5--Pro-8E75C4.svg)](https://ai.google.dev/)
 [![Starlette](https://img.shields.io/badge/Starlette-Fast_ASGI-009688.svg)](https://www.starlette.io/)
 [![Security](https://img.shields.io/badge/Security-Git_Key_Guard_%26_Ephemeral_Session-success.svg)]()
 [![Standard](https://img.shields.io/badge/Output_Format-Standard_A_to_H-orange.svg)]()
+[![Purpose](https://img.shields.io/badge/Purpose-Academic_%26_Research_Only-red.svg)]()
+[![i18n](https://img.shields.io/badge/Languages-EN%20%7C%20JA%20%7C%20ZH--CN%20%7C%20ZH--TW%20%7C%20FR-brightgreen.svg)]()
 
-**FinReAct Intelligence Platform** は、企業の法定開示・公式一次情報を厳格な根拠とし、企業の財務状況、収益性、成長性、資本効率（デュポン分解）、資金繰り（CCC）、事業リスク、および競合ベンチマークを調査・分析・整理する機関投資家・経営企画水準の財務分析ソリューションです。
-
----
-
-## 1. ソリューション概要 (Solution Overview)
-
-本ソリューションは、上場企業・グローバル企業の開示書類（有価証券報告書、SEC Form 10-K/10-Q、決算短信、香港取引所年次報告等）を起点とし、シニア金融アナリスト水準の財務レポートをAIが安定的かつ再現的に生成できるよう設計されています。
-
-### 💡 コアとなる3つの強み
-
-1. **公式一次情報への厳格な立脚 (Primary Disclosures First)**:
-   - 金融ポータルや二次報道、アナリスト予想数値を一次事実と混同せず、EDINET、TDnet、SEC EDGAR等の公式開示から数値を直接抽出・照合します。
-   - すべての分析値に対象期間（FY/Q/TTM）、報告通貨、会計基準（IFRS / US GAAP / 日本基準）、連結/単体区分を併記します。
-
-2. **Gemini LLM × 金融知識から結晶化させた「Corporate Financeスキル」**:
-   - Google の最新マルチモーダル推論モデル **Gemini LLM**（`gemini-2.5-flash` / `gemini-2.5-pro` 等）の構造化データ抽出力・文脈理解力をコアエンジンに採用。
-   - 単なる汎用プロンプトではなく、コーポレートファイナンス理論および投資銀行・リサーチ実務知見を凝縮した [`.agents/skills/corporate-finance-analyst/`](.agents/skills/corporate-finance-analyst/) スキルフレームワークを融合。
-   - LLMの定性推論力と、四則演算誤差（ハルシネーション）を完全に排除する Python決定論的計算ロジック（`scripts/financial_calc.py`）をハイブリッド連携させています。
-
-3. **中立的な意思決定支援 (Objective & Decision-Ready)**:
-   - 株式の「買い」「売り」等の主観的投資推奨を厳禁とし、客観的な事実（Fact）、財務指標分析（Analysis）、仮説・リスク（Hypothesis）、未確認事項（Open Questions）を明確に峻別します。
+> [!CAUTION]
+> ### ⚠️ MANDATORY LEGAL NOTICE, ACADEMIC RESEARCH DISCLAIMER & TERMS OF ACCESS
+> 
+> **1. STRICTLY FOR ACADEMIC & RESEARCH PURPOSES ONLY**  
+> The **FinReAct Intelligence Platform** was conceived, designed, and developed **strictly as an experimental academic research and educational demonstration prototype** investigating autonomous Large Language Model (LLM) reasoning loops (ReAct), deterministic financial calculations, and automated primary filing synthesis.
+> 
+> **2. ABSOLUTE DISCLAIMER OF INVESTMENT ADVICE & LIABILITY**  
+> Under no circumstances does this platform, its source code, documentation, or generated outputs constitute financial, investment, legal, tax, accounting, or regulatory advice. This application does NOT issue buy, sell, hold, or trading recommendations for any security or asset class under any financial regulatory jurisdiction (including, but not limited to, the US SEC, Japan FSA, France AMF, China CSRC, and Hong Kong SFC).  
+> **THE AUTHORS, DEVELOPERS, RESEARCHERS, AND CONTRIBUTORS ASSUME NO RESPONSIBILITY OR LIABILITY WHATSOEVER FOR ANY DIRECT, INDIRECT, INCIDENTAL, CONSEQUENTIAL, SPECIAL, PUNITIVE, OR ECONOMIC LOSSES, LOST PROFITS, OR INVESTMENT DAMAGES OF ANY KIND INCURRED BY ANY INDIVIDUAL OR ENTITY ARISING DIRECTLY OR INDIRECTLY FROM THE USE, RELIANCE, INTERPRETATION, CONCLUSION, OR REUSE OF THIS APPLICATION, ITS DATA, OR ITS REPORTS.**
+> 
+> **3. CONDITIONAL ACCESS & DENIAL OF USE (TERMS OF USE)**  
+> Access to and use of this repository, software, models, and generated deliverables is granted **strictly conditioned upon your unconditional, irrevocable acceptance of this disclaimer in full**.  
+> **IF YOU DO NOT FULLY AND UNCONDITIONALLY AGREE TO, ALIGN WITH, AND ACCEPT THESE TERMS, YOU ARE STRICTLY FORBIDDEN AND DENIED PERMISSION TO ACCESS, CLONE, RUN, DEPLOY, REDISTRIBUTE, OR UTILIZE THIS APPLICATION, ITS CODEBASE, AND ITS OUTPUTS IN ANY FORM.**
 
 ---
 
-## 2. Dashboard アプリの自律推論エージェントフロー (Agent Flow)
+## 1. Solution Overview
 
-本リポジトリに同梱されている **FinReAct Interactive Dashboard** は、自律型AIエージェントの **ReAct（Reasoning + Acting + Observation）フレームワーク** に基づき、リアルタイムに思考プロセスをストリーミング配信しながら財務調査を完遂します。
+**FinReAct Intelligence Platform** is an institutional-grade corporate finance analysis solution. It operates directly on audited primary disclosures (EDINET Securities Reports, SEC Form 10-K/10-Q, Earnings Releases, HKEX Annual Reports) to systematically analyze profitability, multi-year growth trajectory, capital efficiency (DuPont decomposition), working capital liquidity (Cash Conversion Cycle), operational risks, and peer benchmarking with senior analyst precision.
 
-視覚的な理解を深めるため、本システムは **「(1) 各ステップで実行される自律思考・行動のコアサイクル（ミクロ構造）」** と **「(2) 調査開始からダッシュボード描画までの5段階パイプライン（マクロ構造）」** の2層構造で可視化しています。
+### 💡 Core Architectural Pillars
+
+1. **Grounded Strictly in Verified Primary Disclosures**:
+   - Strictly separates audited primary facts from secondary media commentary, market rumors, and analyst consensus. Data is reconciled directly against official statutory repositories (EDGAR, EDINET, TDnet, HKEX).
+   - Every metric explicitly specifies reporting period (FY/Q/TTM), reporting currency, accounting standard (IFRS / US-GAAP / J-GAAP), and consolidation scope.
+
+2. **Gemini LLM × Distilled Corporate Finance Analyst Skill**:
+   - Powered by Google's state-of-the-art multimodal reasoning models (**Gemini 2.5 Flash** / **Gemini 2.5 Pro**) for high-fidelity filing ingestion and qualitative contextual inference.
+   - Infused with the institutional domain guidelines formulated in [`.agents/skills/corporate-finance-analyst/`](.agents/skills/corporate-finance-analyst/).
+   - Integrates deterministic Python computation (`scripts/financial_calc.py`) to eliminate arithmetic hallucinations, ensuring zero mathematical errors in ratio calculations.
+
+3. **Objective, Decision-Grade Financial Analysis**:
+   - Enforces a strict separation of **Facts** (disclosed figures), **Analysis** (deterministic ratios), **Hypotheses** (analyst modeling), and **Open Questions** (areas requiring further audit). Subjective investment promotion is categorically barred.
 
 ---
 
-### (1) ReAct コア推論ループ（各ステップ共通の思考・行動エンジン）
+## 2. Autonomous Agent Architecture (Agent Flow)
 
-AIエージェントは各段階において、あらかじめ固定されたスクリプトを機械的に実行するのではなく、**「現状の把握と推論（Thought）」→「外部ツール呼び出し（Action）」→「実行結果の検証・数値照合（Observation）」** の自律サイクルを回しながら次のアクションを決定します。
+The **FinReAct Interactive Dashboard** operates on an autonomous **ReAct (Reasoning + Acting + Observation)** engine, providing real-time streaming updates of its cognitive and investigative process as it compiles corporate financial analyses.
+
+The platform architecture is structured across two complementary tiers:  
+1. **The ReAct Core Engine (Micro-Structure)**: The recursive reasoning and verification loop executed at every step.
+2. **The 5-Stage End-to-End Pipeline (Macro-Structure)**: The end-to-end workflow from user inquiry to dynamic dashboard rendering.
+
+---
+
+### (1) The ReAct Core Engine (Iterative Reasoning Loop)
+
+Rather than executing a rigid static script, the agent continuously drives an autonomous cycle: **"Observe & Hypothesize (Thought)" → "Invoke Analytical Tools (Action)" → "Verify Empirical Results (Observation)"**.
 
 ```mermaid
 flowchart LR
-    %% スタイル定義
+    %% Style definitions
     classDef thoughtStyle fill:#2e1065,stroke:#a855f7,stroke-width:2px,color:#f8fafc;
     classDef actionStyle fill:#0c4a6e,stroke:#0284c7,stroke-width:2px,color:#f8fafc;
     classDef obsStyle fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#f8fafc;
 
-    subgraph ReActEngine ["🔁 自律型 AI エージェントのコア推論エンジン (ReAct Cycle)"]
+    subgraph ReActEngine ["🔁 Autonomous AI Agent Core Engine (ReAct Cycle)"]
         direction LR
-        T["🧠 1. 思考 (Thought)<br>状況の把握・仮説立案・次に必要な情報の特定"]
-        A["⚡ 2. 行動 (Action)<br>開示探索 / Python計算 / 競合比較ツールの呼出"]
-        O["👁️ 3. 観測 (Observation)<br>取得データの整合性検証・計算結果の確認"]
+        T["🧠 1. Thought<br>Assess context, formulate hypothesis, identify required data"]
+        A["⚡ 2. Action<br>Invoke filing retrieval, deterministic Python math, or peer comparison"]
+        O["👁️ 3. Observation<br>Verify data integrity, check math bounds, reconcile disclosures"]
 
-        T ==>|"ツール選定 & 引数決定"| A
-        A ==>|"生データ返却"| O
-        O ==>|"検証結果をコンテキストに統合"| T
+        T ==>|"Select Tool & Arguments"| A
+        A ==>|"Return Raw Dataset"| O
+        O ==>|"Integrate Verified Findings"| T
     end
 
     class T thoughtStyle;
@@ -68,70 +84,67 @@ flowchart LR
 
 ---
 
-### (2) 5段階エンドツーエンド処理パイプライン (End-to-End Architecture)
-
-ユーザーからの企業リクエストを受け取り、エフェメラルセッションを通じて5つの自律フェーズを逐次完遂し、ダッシュボードおよびエクスポート用データへと変換するシステム全体の連携フローです。
+### (2) 5-Stage End-to-End System Pipeline
 
 ```mermaid
 flowchart LR
-    %% レイヤー別スタイル定義
+    %% Layer styles
     classDef clientStyle fill:#1e293b,stroke:#38bdf8,stroke-width:2px,color:#f8fafc;
     classDef phaseStyle fill:#172554,stroke:#60a5fa,stroke-width:2px,color:#f8fafc;
     classDef toolStyle fill:#042f2e,stroke:#14b8a6,stroke-width:2px,color:#f8fafc;
     classDef uiStyle fill:#2e1065,stroke:#c084fc,stroke-width:2px,color:#f8fafc;
     classDef exportStyle fill:#451a03,stroke:#f59e0b,stroke-width:2px,color:#f8fafc;
 
-    %% 1. クライアント入力層
-    subgraph Layer1 ["1. クライアント & 認証層"]
-        User["👤 ユーザー入力<br>企業名 / ティッカー<br>(例: Lenovo, トヨタ)"]
-        Session["🔒 一時セッション確立<br>Ephemeral In-Memory Token<br>(APIキー非露出)"]
+    %% 1. Client & Auth
+    subgraph Layer1 ["1. Client & Security Layer"]
+        User["👤 User Input<br>Company Name / Ticker<br>(e.g. Lenovo, Toyota, Apple)"]
+        Session["🔒 Ephemeral Session<br>In-Memory UUID Token<br>(Zero Key Exposure)"]
         User --> Session
     end
 
-    %% 2. ReAct 自律推論パイプライン
-    subgraph Layer2 ["2. FinReAct 自律推論パイプライン (SSE Streaming)"]
+    %% 2. ReAct Pipeline
+    subgraph Layer2 ["2. FinReAct Autonomous Pipeline (SSE Streaming)"]
         direction TB
-        S1["【Step 1】一次開示アクセス<br>・有報 / 10-K / 短信探索<br>・確定財務三表の取得"]
-        S2["【Step 2】決定論的指標計算<br>・3段階デュポン分解 (ROE)<br>・ROIC / CCC / Net Debt"]
-        S3["【Step 3】競合ベンチマーク<br>・同業2〜3社との横並び対照<br>・利益率 / 運転資本 / 財務余力"]
-        S4["【Step 4】早期警戒・リスク評価<br>・2×2 リスクヒートマップ<br>・EWI指標 & 監視開示特定"]
-        S5["【Step 5】機関レポート統合生成<br>・A〜H標準規格 Markdown<br>・ダッシュボード用構造化JSON"]
+        S1["【Step 1】Primary Disclosure Retrieval<br>• Access statutory 10-K / HKEX / EDINET<br>• Ingest audited 3-statement financials"]
+        S2["【Step 2】Deterministic Ratio Engine<br>• 3-stage DuPont decomposition (ROE)<br>• Calculate ROIC, CCC, Net Debt / EBITDA"]
+        S3["【Step 3】Multi-Metric Peer Benchmarking<br>• Cross-evaluate against 2-3 sector rivals<br>• OPM, Working Capital, Solvency comparison"]
+        S4["【Step 4】Risk Matrix & Early Warning (EWI)<br>• 2×2 Risk Heatmap Matrix<br>• Monitor sensitivity & transmission channels"]
+        S5["【Step 5】Institutional Dossier Synthesis<br>• Standard Format (A to H) Markdown<br>• Structured payload for interactive UI"]
 
-        S1 -->|"三表データ確定"| S2
-        S2 -->|"指標群確定"| S3
-        S3 -->|"競合対比知見"| S4
-        S4 -->|"リスク評価確定"| S5
+        S1 -->|"Audited Statements"| S2
+        S2 -->|"Deterministic Metrics"| S3
+        S3 -->|"Comparative Landscape"| S4
+        S4 -->|"Risk & Solvency Matrix"| S5
     end
 
-    %% 3. バックエンド・実行ツール群
-    subgraph Layer3 ["3. 実行ツール & 知識リソース"]
+    %% 3. Tools & Resources
+    subgraph Layer3 ["3. Execution Tools & Knowledge"]
         direction TB
-        T_Gemini["🤖 Google Gemini 2.5<br>(開示構造化・推論・定性分析)"]
-        T_Calc["🧮 Python 決定論的計算機<br>(scripts/financial_calc.py)"]
-        T_Archive["📚 開示アーカイブ & EDGAR<br>(一次情報データセット)"]
+        T_Gemini["🤖 Google Gemini 2.5<br>(Contextual extraction & qualitative reasoning)"]
+        T_Calc["🧮 Deterministic Calculator<br>(scripts/financial_calc.py)"]
+        T_Archive["📚 Statutory Archives & Presets<br>(Audited empirical datasets)"]
     end
 
-    %% 4. フロントエンド・可視化層
-    subgraph Layer4 ["4. 可視化ダッシュボード & 出力"]
+    %% 4. Frontend UI/UX
+    subgraph Layer4 ["4. Interactive Visualization & Export"]
         direction TB
-        DashUI["📊 FinReAct Dashboard<br>・📊 Overview & Charts (推移・CCC)<br>・📑 A〜H 機関レポート (Sticky TOC)<br>・⚔️ ピアベンチマーク (Heroカード)<br>・🛡️ 2×2 リスクヒートマップ"]
-        ExportMenu["📥 統合エクスポート (Dossier)<br>・📦 Full Dossier (PDF)<br>・📄 Institutional Report (PDF)<br>・📑 Integrated Markdown (.md)<br>・📊 Raw Financial Dataset (.json)"]
+        DashUI["📊 FinReAct Dashboard<br>• 📊 Multi-Year Trajectory & CCC Bar<br>• 📑 Full Institutional Report A~H (Sticky TOC)<br>• ⚔️ Peer Benchmark Matrix (Hero Cards)<br>• 🛡️ 2×2 Risk Heatmap Matrix"]
+        ExportMenu["📥 Unified Export (Dossier)<br>• 📦 Full Dossier (PDF)<br>• 📄 Institutional Report (PDF)<br>• 📑 Integrated Markdown (.md)<br>• 📊 Raw Financial Dataset (.json)"]
         DashUI --> ExportMenu
     end
 
-    %% システム間連携
-    Session ==>|"SSEストリーム開始"| S1
+    %% System Interactions
+    Session ==>|"Initiate SSE Stream"| S1
 
-    S1 <-->|"開示探索"| T_Archive
-    S1 <-->|"テキスト正規化"| T_Gemini
-    S2 <-->|"誤差ゼロ指標計算"| T_Calc
-    S3 <-->|"同業データ対比"| T_Archive
-    S4 <-->|"リスク定性評価"| T_Gemini
-    S5 <-->|"最終レポート構成"| T_Gemini
+    S1 <-->|"Filing Search"| T_Archive
+    S1 <-->|"Text Extraction"| T_Gemini
+    S2 <-->|"Zero-Hallucination Math"| T_Calc
+    S3 <-->|"Comparable Benchmarks"| T_Archive
+    S4 <-->|"Qualitative Modeling"| T_Gemini
+    S5 <-->|"Dossier Composition"| T_Gemini
 
-    S5 ==>|"リアルタイム描画"| DashUI
+    S5 ==>|"Real-Time Push"| DashUI
 
-    %% スタイル適用
     class User,Session clientStyle;
     class S1,S2,S3,S4,S5 phaseStyle;
     class T_Gemini,T_Calc,T_Archive toolStyle;
@@ -141,205 +154,200 @@ flowchart LR
 
 ---
 
-### 📋 各ステップの自律処理内容と成果物
+### 📋 Stage-by-Stage Reasoning & Empirical Deliverables
 
-| ステップ | 主な思考（Thought） | 実行ツール（Action） | 検証・成果物（Observation） |
+| Stage | Agent Reasoning (Thought) | Tool Execution (Action) | Verification & Deliverables (Observation) |
 |---|---|---|---|
-| **Step 1**<br>一次開示アクセス | 企業の開示体系、報告通貨、会計基準（IFRS / US-GAAP / 日本基準）を特定し、調査計画を策定 | `retrieve_primary_disclosures`<br>(EDINET / SEC EDGAR / 取引所開示) | 過去複数期の貸借対照表（B/S）、損益計算書（P&L）、キャッシュフロー計算書（C/F）の確定数値を抽出 |
-| **Step 2**<br>決定論的指標計算 | 四則演算ハルシネーションを完全に排除するため、決定論的計算スクリプトを実行 | `compute_deterministic_ratios`<br>(`scripts/financial_calc.py`) | デュポン3段階分解（ROE = 純利益率 × 資産回転率 × 財務レバレッジ）、ROIC、現金循環日数（CCC）、Net Debt/EBITDAを確定 |
-| **Step 3**<br>競合ピアベンチマーク | 同一市場またはグローバル競合他社との構造的差異を多面検証 | `benchmark_peers`<br>(同業2〜3社との横並び対照) | 営業利益率（OPM）、資本効率、運転資本サイクル、財務安全性のピアベンチマーク対照表および業界インプリケーションを作成 |
-| **Step 4**<br>早期警戒・リスク評価 | 財務諸表注記・リスク情報から潜在的下振れ要因と早期警戒指標（EWI）を特定 | `evaluate_risk_ewi`<br>(影響度×確率の4象限評価) | 財務影響度（縦軸）× 発生確率（横軸）の 2×2 リスクヒートマップ（Critical / Severe / Moderate / Active）および確認すべき開示書類を特定 |
-| **Step 5**<br>機関レポート統合 | 全検証データを集約し、機関投資家向け標準規格（A〜H）に準拠した調査パッケージを統合生成 | `synthesize_full_dossier`<br>(Markdown & JSON レポートビルダー) | A〜H完全Markdown、Chart.js用時系列データ、DuPontドライバー、CCC Waterfallバー、印刷用PDFレイアウトを完成 |
+| **Step 1**<br>Primary Filings | Identify company structure, reporting currency, and accounting framework (IFRS/US-GAAP/J-GAAP). | `retrieve_primary_disclosures`<br>(SEC EDGAR / HKEX / EDINET) | Multi-year historical Balance Sheet (B/S), Income Statement (P&L), and Cash Flow Statement (C/F). |
+| **Step 2**<br>Deterministic Ratios | Eliminate LLM arithmetic hallucinations via deterministic execution of computational logic. | `compute_deterministic_ratios`<br>(`scripts/financial_calc.py`) | 3-stage DuPont decomposition (ROE = Net Margin × Asset Turnover × Equity Multiplier), ROIC vs WACC, CCC, Net Debt / EBITDA. |
+| **Step 3**<br>Peer Benchmarking | Contrast operational efficiency, profit quality, and working capital agility against industry rivals. | `benchmark_peers`<br>(Multi-dimensional cross comparison) | Peer benchmarking matrix evaluating Operating Margin (OPM), capital returns, CCC, and balance sheet leverage with strategic commentary. |
+| **Step 4**<br>Risk & EWI Matrix | Analyze disclosure notes and macro sensitivities to identify operational bottlenecks and early warning indicators. | `evaluate_risk_ewi`<br>(Impact × Likelihood 2×2 Matrix) | 2×2 Risk Heatmap Matrix (Critical, Severe, Moderate, Active) and specific filing notes flagged for ongoing monitoring. |
+| **Step 5**<br>Institutional Dossier | Consolidate verified disclosures into the complete institutional research dossier. | `synthesize_full_dossier`<br>(Markdown & JSON synthesis engine) | Complete Sections A through H dossier, Chart.js time-series payloads, DuPont driver callouts, CCC waterfall breakdown, and printable PDF layouts. |
 
 ---
 
-## 3. 実装に必要なコンポーネント (System Components & Architecture)
+## 3. System Architecture & Components
 
-本ソリューションは、堅牢性・高速性・セキュリティを両立させるため、以下のコンポーネントで構成されています。
-
-```
-┌────────────────────────────────────────────────────────────────────────┐
-│                        FinReAct Solution Architecture                  │
-├───────────────────────────────────┬────────────────────────────────────┤
-│   1. Backend & Server Engine      │   2. AI & Financial Logic          │
-│   - Starlette ASGI (Fast, Async)  │   - Google GenAI SDK (Gemini)      │
-│   - SSE Streaming (Real-time SSE) │   - Corporate Finance Analyst Skill│
-│   - Ephemeral Session Store       │   - Deterministic Calc Engine      │
-├───────────────────────────────────┼────────────────────────────────────┤
-│   3. Security & Key Guard         │   4. Modern Frontend UI/UX         │
-│   - In-Memory Token Exchange      │   - Collapsible ReAct Rail         │
-│   - No Keys in URLs, Disk, or Logs│   - Chart.js 4.x Visualizations    │
-│   - LocalStorage Client Isolation │   - Marked.js & html2pdf.js Export │
-└───────────────────────────────────┴────────────────────────────────────┘
-```
-
-### コンポーネント一覧と役割
-
-| コンポーネント | ファイルパス | 主要技術 / 役割 |
+| Component | Path | Technology & Architectural Role |
 |---|---|---|
-| **ASGI Webサーバー** | [`dashboard/server.py`](dashboard/server.py) | **Starlette + Uvicorn**。<br>・Server-Sent Events（SSE）によるリアルタイム推論ストリーミング。<br>・一時セッショントークン発行API（`/api/auth/session`）。<br>・静的アセット（HTML/CSS/JS）の高速ホスティング。 |
-| **ReAct推論エンジン** | [`dashboard/agent_engine.py`](dashboard/agent_engine.py) | **Google GenAI SDK + 非同期ジェネレータ**。<br>・Gemini 2.5 Flash / Pro による動的財務データ抽出。<br>・検証済みプリセットデータセット（Lenovo, Toyota, Tesla, Apple, MSFT 等）。<br>・A〜H 機関レポート自動生成（`build_comprehensive_a_to_h_report`）。 |
-| **決定論的財務計算機** | [`scripts/financial_calc.py`](scripts/financial_calc.py) | **Python標準ライブラリ（外部依存ゼロ）**。<br>・成長率（CAGR/YoY）、収益性（GPM/OPM）、デュポン分解、ROIC、CCC（DSO+DIO-DPO）、Net Debt倍率の厳密計算。 |
-| **金融アナリストスキル** | [`.agents/skills/corporate-finance-analyst/`](.agents/skills/corporate-finance-analyst/) | **Antigravity AI Agent Skill**。<br>・`SKILL.md`: 行動原則、分析ルール、標準出力フォーマット定義。<br>・`references/`: 財務指標ガイド、一次情報源ガイド、早期警戒フレームワーク、レポートテンプレート。 |
-| **フロントエンド UI/UX** | [`dashboard/static/`](dashboard/static/) | **Vanilla HTML5 / Modern CSS / JavaScript**。<br>・`index.html`: グリッドレイアウト、折りたたみレール、4タブ構成。<br>・`css/style.css`: 金融機関向けダークテーマ、グラスモーフィズム、レスポンシブ設計。<br>・`js/app.js`: SSE接続、TOCジャンプ、Waterfallバー計算、統合エクスポート。<br>・`js/charts.js`: Chart.js による財務推移 & FCFクオリティ描画。 |
-| **セキュリティ機構** | [`dashboard/server.py`](dashboard/server.py), [`app.js`](dashboard/static/js/app.js) | **Ephemeral Session Token Pattern**。<br>・APIキーをGET URLのクエリパラメータやディスク、ログに一切露出させず、POST通信によるインメモリUUIDトークンへ変換して保護。 |
-| **環境構築ブートストラップ** | [`dashboard/run_dashboard.bat`](dashboard/run_dashboard.bat) | **Windows環境向けバッチスクリプト**。<br>・ローカル仮想環境（`.venv`）の自動検知・作成、pip依存の自動インストール、サーバー起動、ブラウザ自動立ち上げを一括実行。 |
+| **Fast ASGI Web Server** | [`dashboard/server.py`](dashboard/server.py) | **Starlette + Uvicorn**.<br>• Real-time SSE streaming endpoint (`/api/analyze/stream`).<br>• Secure ephemeral token session exchange (`/api/auth/session`).<br>• High-performance static asset hosting. |
+| **ReAct Agent Engine** | [`dashboard/agent_engine.py`](dashboard/agent_engine.py) | **Google GenAI SDK + Async Generators**.<br>• Dynamic financial data extraction via Gemini 2.5 Flash / Pro.<br>• Audited baseline presets (Lenovo, Toyota, Tesla, Apple, Sony, MSFT, Honda).<br>• Comprehensive multilingual A〜H dossier compiler (`build_comprehensive_a_to_h_report`). |
+| **Deterministic Calculator** | [`scripts/financial_calc.py`](scripts/financial_calc.py) | **Python Standard Library (Zero External Dependencies)**.<br>• Precision calculation of CAGR, YoY, GPM, OPM, DuPont 3-stage, ROIC, CCC (DSO + DIO - DPO), and Net Debt / EBITDA. |
+| **Corporate Finance Skill** | [`.agents/skills/corporate-finance-analyst/`](.agents/skills/corporate-finance-analyst/) | **Antigravity AI Agent Skill**.<br>• `SKILL.md`: Professional guidelines, analysis rules, and standard output format.<br>• `references/`: Financial metrics reference, statutory sources guide, early warning framework. |
+| **Modern Frontend UI/UX** | [`dashboard/static/`](dashboard/static/) | **Vanilla HTML5, Modern CSS, JavaScript (No Heavy Frameworks)**.<br>• `index.html`: Responsive grid, collapsible ReAct rail, 4-tab dashboard.<br>• `css/style.css`: Financial dark-mode theme, glassmorphism, responsive micro-animations.<br>• `js/app.js`: SSE streaming client, TOC jump navigation, CCC waterfall timeline, unified dossier export.<br>• `js/charts.js`: Interactive Chart.js multi-axis trajectory & cash flow quality visualizations. |
+| **Multilingual i18n Engine** | [`dashboard/static/js/i18n.js`](dashboard/static/js/i18n.js) | **Deterministic Multi-Language Financial Dictionary**.<br>• Supports 5 institutional standards: English (US), Japanese, Simplified Chinese, Traditional Chinese, and French IFRS.<br>• Instant client-side DOM translation without full-page reloads. |
+| **Key Guard & Security** | [`dashboard/server.py`](dashboard/server.py), [`app.js`](dashboard/static/js/app.js) | **Ephemeral Session Token Pattern**.<br>• API keys are never exposed in GET URLs, server logs, or persistent disk storage. Exchanged strictly via POST for an in-memory UUID token. |
+| **Windows Bootstrap** | [`dashboard/run_dashboard.bat`](dashboard/run_dashboard.bat) | **Automated Environment Script**.<br>• Detects/creates local `.venv`, installs dependencies, launches the server, and opens the default browser automatically. |
 
 ---
 
-## 4. ディレクトリ構成 (Repository Structure)
+## 4. Repository Structure
 
 ```
 H:\Agent-Finance/
 ├── .agents/
 │   └── skills/
-│       └── corporate-finance-analyst/            # コーポレートファイナンス実務スキル
-│           ├── SKILL.md                          # エージェント行動規範・標準ワークフロー定義
+│       └── corporate-finance-analyst/            # Institutional Corporate Finance Skill
+│           ├── SKILL.md                          # Behavioral constraints & standard A~H workflow
 │           ├── references/
-│           │   ├── financial_metrics_guide.md    # 財務分析指標・算式・会計基準調整ガイド
-│           │   ├── primary_disclosure_sources.md # 一次情報収集・法定開示書類精読ガイド
-│           │   ├── report_templates.md           # 標準レポート（A〜H）& 役員向け1枚メモ テンプレート
-│           │   └── risk_early_warning_framework.md # リスク分析 & 早期警戒指標フレームワーク
+│           │   ├── financial_metrics_guide.md    # Formulae, accounting reconciliations, and ratio definitions
+│           │   ├── primary_disclosure_sources.md # Statutory filing retrieval guide (EDGAR, EDINET, HKEX)
+│           │   ├── report_templates.md           # Full standard dossier (A-H) & executive 1-pager templates
+│           │   └── risk_early_warning_framework.md # Risk matrix & early warning indicators (EWI) guide
 │           ├── examples/
-│           │   └── sample_toyota_vs_tesla.md     # トヨタ vs テスラ 実践分析サンプルレポート
+│           │   └── sample_toyota_vs_tesla.md     # Reference corporate benchmark analysis report
 │           └── scripts/
-│               └── financial_calc.py             # スキル同梱の財務計算スクリプト
-├── dashboard/                                    # FinReAct Webダッシュボードアプリ
-│   ├── run_dashboard.bat                         # venv構築・依存導入・アプリ起動ワンクリックバッチ
-│   ├── requirements.txt                          # Starlette, Uvicorn, Google-GenAI, dotenv
-│   ├── .env.example                              # 環境変数テンプレート（GEMINI_API_KEY等）
-│   ├── server.py                                 # ASGI Webサーバー & セキュアセッション管理
-│   ├── agent_engine.py                           # ReAct推論エンジン & A〜Hレポートビルダー
-│   └── static/                                   # フロントエンド資産
-│       ├── index.html                            # ダッシュボードHTML（折りたたみレール、TOC、ヒートマップ）
+│               └── financial_calc.py             # Bundled deterministic computation engine
+├── dashboard/                                    # FinReAct Interactive Web Application
+│   ├── run_dashboard.bat                         # Automated venv creation & launch script for Windows
+│   ├── requirements.txt                          # Starlette, Uvicorn, Google-GenAI, python-dotenv
+│   ├── .env.example                              # Environment configuration template
+│   ├── server.py                                 # ASGI Web server & secure session manager
+│   ├── agent_engine.py                           # ReAct execution stream & dossier builder
+│   └── static/                                   # Frontend web application assets
+│       ├── index.html                            # Dashboard structure, collapsible rail, sticky TOC
 │       ├── css/
-│       │   └── style.css                         # プロフェッショナル金融デザインCSS
+│       │   └── style.css                         # Dark theme, glassmorphic styling, responsive layout
 │       └── js/
-│           ├── app.js                            # UIコントローラー、SSEクライアント、エクスポート
-│           └── charts.js                         # Chart.js グラフ初期化・更新モジュール
-├── INPUT/                                        # コーポレートファイナンス理論・専門書PDF資料群
+│           ├── app.js                            # Main application controller, SSE stream, unified export
+│           ├── charts.js                         # Interactive Chart.js trajectory & cash flow visualizer
+│           └── i18n.js                           # 5-language institutional financial dictionary
+├── INPUT/                                        # Corporate finance theory references and textbooks
 ├── scripts/
-│   └── financial_calc.py                         # ルート直下から即座に実行可能な計算スクリプト
-├── AGENTS.md                                     # ワークスペース内AIエージェント向け行動原則
-├── user_intake_template.md                       # 依頼開始用ユーザー入力テンプレート
-└── README.md                                     # 本ドキュメント
+│   └── financial_calc.py                         # Standalone executable deterministic calculation engine
+├── AGENTS.md                                     # Workspace AI agent operating principles
+├── user_intake_template.md                       # Standard prompt template for corporate inquiries
+└── README.md                                     # This documentation
 ```
 
 ---
 
-## 5. クイックスタート & 使い方 (Quickstart & Usage)
+## 5. Quickstart & Usage
 
-### 方法 A: Dashboard Web アプリの起動 (推奨)
+### Method A: Interactive Web Dashboard (Recommended)
 
-最も直感的に財務分析とAI推論プロセスを確認できる方法です。
+The interactive dashboard provides the most intuitive experience for monitoring the ReAct thought process, viewing dynamic charts, and exporting dossiers.
 
-#### 1. ワンクリック起動 (Windows)
-エクスプローラーから [`dashboard/run_dashboard.bat`](dashboard/run_dashboard.bat) をダブルクリックして実行します。
-自動的に以下の処理が行われます：
-- ローカル Python 仮想環境（`.venv`）の作成
-- 必要な依存ライブラリ（`requirements.txt`）の自動インストール
-- サーバー起動（`http://localhost:8080`）
-- 既定のWebブラウザでダッシュボードを自動オープン
+#### 1. One-Click Automated Launch (Windows)
+Double-click [`dashboard/run_dashboard.bat`](dashboard/run_dashboard.bat) in Windows Explorer. The script will automatically:
+- Create a dedicated local Python virtual environment (`.venv`)
+- Install all necessary dependencies from `requirements.txt`
+- Start the server on `http://localhost:8080`
+- Open the dashboard in your default web browser
 
-#### 2. コマンドラインからの手動起動
+#### 2. Manual Command Line Launch
 ```bash
-# 仮想環境のアクティベート
+# Navigate to repository root
 cd /d H:\Agent-Finance
+
+# Create and activate virtual environment
 python -m venv .venv
 .venv\Scripts\activate
 
-# 依存パッケージのインストール
+# Install dependencies
 pip install -r dashboard/requirements.txt
 
-# サーバーの起動
+# Start dashboard server
 python dashboard/server.py
 ```
-ブラウザで `http://localhost:8080/` を開きます。
+Open `http://localhost:8080/` in your browser.
 
-#### 3. Gemini API キーとモデルの設定
-- 画面右上の **🔑 Settings** または **🤖 モデルバッジ** をクリック。
-- お手持ちの Google Gemini API キーを入力して「Save Settings」をクリックします。
-- 使用するモデル（`gemini-2.5-flash`, `gemini-2.5-pro` 等）を選択できます。直前に選択したモデルはブラウザ内に自動記憶されます。
-- ※ APIキーを設定しない場合でも、検証済みプリセット企業（Lenovo, Toyota, Tesla, Sony, Apple, MSFT, Honda）の完全分析とデモ推論が利用可能です。
+#### 3. API Key & Model Configuration
+- Click **🔑 Settings** or the **🤖 Model Badge** in the top-right header.
+- Enter your personal Google Gemini API key and select your preferred model (`gemini-2.5-flash`, `gemini-2.5-pro`, etc.).
+- Settings are preserved in your browser's client-side memory.
+- *Note*: Even without an API key, the platform provides full analyses and pre-compiled ReAct demonstration streams for verified presets (Lenovo, Toyota, Tesla, Apple, Sony, MSFT, Honda).
 
 ---
 
-### 方法 B: Antigravity IDE での呼び出し (AI Agent Workflow)
+### Method B: Antigravity AI Agent Workflow
 
-本リポジトリ内の [`.agents/skills/corporate-finance-analyst/`](.agents/skills/corporate-finance-analyst/) は、Antigravity の Workspace Skill として自動認識されます。
-
-チャット上で直接エージェントに分析を依頼するか、[`user_intake_template.md`](user_intake_template.md) をコピー＆ペーストしてプロンプトを入力してください：
+The bundled [`.agents/skills/corporate-finance-analyst/`](.agents/skills/corporate-finance-analyst/) skill is automatically discovered by Antigravity IDE. You can request research directly in chat:
 
 ```text
-「トヨタ自動車（7203.T）の直近3期の有報と決算短信を一次情報として調査し、
-デュポン分解、CCC、およびテスラとの競合比較を含めたA〜H標準レポートを作成してください。」
+"Conduct a corporate financial research on Toyota Motor (7203.T) using its statutory annual securities reports 
+and earnings releases. Perform a 3-stage DuPont decomposition, CCC breakdown, and peer comparison against Tesla, 
+formatted in the standard A to H institutional report."
 ```
 
-エージェントが自動的に当スキルと `scripts/financial_calc.py` を呼び出し、一次情報に基づくレポートを生成します。
+The agent will automatically invoke the skill rules and deterministic calculator (`scripts/financial_calc.py`) to generate an evidence-traceable dossier.
 
 ---
 
-### 方法 C: 財務計算スクリプトの単体実行 (Deterministic Calculation)
+### Method C: Standalone Deterministic Calculator
 
-同梱の `financial_calc.py` は、外部ライブラリを一切使わず Python 標準機能のみで動作します。
+The calculation engine operates using only the Python standard library:
 
 ```bash
-# デモ実行（トヨタ自動車の実績データによるシミュレーション）
+# Run demonstration simulation
 python scripts/financial_calc.py --demo
 
-# カスタムJSONファイルからの計算
+# Compute ratios from custom JSON financial data
 python scripts/financial_calc.py --file path/to/financials.json
 ```
 
 ---
 
-## 6. 分析範囲と標準出力フォーマット (Standard A〜H Format)
+## 6. Standard Institutional Dossier Format (Sections A to H)
 
-生成される完全レポート（Full Institutional Report）は、以下の 8部構成（A〜H規格）に統一されています：
+Every generated institutional report strictly adheres to the 8-part standard structure:
 
 ```
-A. エグゼクティブサマリー (Executive Summary)
-   ├─ 総合結論（3〜5行）
-   ├─ ポジティブ要因 Top 3 / 懸念要因・ボトルネック Top 3
-   └─ 経営注視点 & 分析信頼度・情報制約評価
-B. 企業概要・事業構造概要 (Business Profile & Structure)
-   ├─ 正式企業名 / ティッカー / 本社 / 上場市場
-   ├─ 会計基準（IFRS/US-GAAP/日本基準）/ 報告通貨
-   └─ セグメント別売上・利益構成 / 主要収益ドライバー
-C. 財務ハイライト（時系列推移） (Multi-Year Trajectory)
-   ├─ 過去3〜5期の損益計算書（P&L）確定推移表（YoY / CAGR付）
-   ├─ 貸借対照表（B/S）主要項目推移
-   └─ キャッシュフロー計算書（C/F: 営業CF, 投資CF, FCF）推移
-D. 主要財務指標一覧（算式付き） (Key Financial Ratios)
-   ├─ 収益性指標（売上総利益率、営業利益率、EBITDAマージン）
-   ├─ 資本効率指標（ROE、ROA、ROIC vs WACC）
-   ├─ 運転資本効率（DSO、DIO、DPO、現金循環日数 CCC）
-   └─ 安全性指標（自己資本比率、Net Debt / EBITDA、インタレスト・カバレッジ）
-E. 資本効率・資金繰り・運転資本分析 (Capital Efficiency & CCC Breakdown)
-   ├─ 3段階デュポンツリー分解（売上高純利益率 × 総資産回転率 × 財務レバレッジ）
-   ├─ 主要ドライバー特定（レバレッジ主導 vs マージン主導 vs 資産回転主導）
-   └─ マイナス運転資本（自己金融型モデル）の持続性評価
-F. 競合比較（ピアベンチマーク多面分析） (Peer Benchmarking Matrix)
-   ├─ 同業他社2〜5社との横並び多面比較テーブル
-   └─ 業界シェア、OPM格差、CCC格差、財務余力インプリケーション
-G. リスクマトリクス & 早期警戒指標 (Risk Matrix & Early Warning Indicators)
-   ├─ 財務波及経路、重要度（高/中/低）、発生確率（高/中/顕在化）
-   ├─ 2×2 リスクヒートマップ（Critical / Severe / Moderate / Active）
-   └─ 早期警戒指標（EWI）および定点観測すべき開示書類注記
-H. 経営への示唆・論点 & 一次情報出典一覧 (Strategic Recommendations & Sources)
-   ├─ 経営・財務戦略への具体的提言（資本配分、マージン改善、運転資本防衛）
-   └─ 法定開示・一次情報出典一覧（資料名、開示日、公式URL、注記番号）
+A. Executive Summary
+   ├─ Core Investment Takeaway (3-5 sentences)
+   ├─ Top 3 Positive Value Drivers / Top 3 Structural Concerns & Bottlenecks
+   └─ Governance Watch-points, Confidence Rating & Disclosure Limitations
+B. Business Profile & Economic Model
+   ├─ Legal Entity Name / Ticker / Primary Exchange / Headquarters
+   ├─ Accounting Framework (IFRS / US-GAAP / J-GAAP) / Reporting Currency
+   └─ Segment Revenue & Operating Profit Breakdown / Primary Top-line Drivers
+C. Multi-Year Financial Trajectory
+   ├─ 3 to 5-Year Consolidated Income Statement (P&L) Trends with YoY / CAGR
+   ├─ Balance Sheet (B/S) Structure (Working capital, debt profile, net cash)
+   └─ Cash Flow Statement (C/F) Quality (Operating CF vs Capex vs FCF)
+D. Deterministic Financial Ratios & Formulae
+   ├─ Profitability Ratios (Gross Margin, Operating Margin, EBITDA Margin)
+   ├─ Capital Efficiency (Return on Equity ROE, ROA, ROIC vs WACC Spread / EVA)
+   ├─ Working Capital Cycle (DSO, DIO, DPO, Cash Conversion Cycle CCC)
+   └─ Solvency & Leverage (Equity Ratio, Net Debt / EBITDA, Interest Coverage)
+E. Capital Efficiency, Cash Conversion Cycle & Working Capital
+   ├─ 3-Stage DuPont Tree Decomposition (Net Margin × Asset Turnover × Leverage)
+   ├─ Primary Driver Attribution (Leverage-driven vs Margin-driven vs Turnover-driven)
+   └─ Negative Working Capital Model Sustainability Assessment
+F. Multi-Dimensional Peer Benchmarking Matrix
+   ├─ Side-by-Side Comparison against 2-5 Direct Global Competitors
+   └─ Structural Disparities in Margin Scale, CCC Agility, and Balance Sheet Buffer
+G. Risk Matrix & Early Warning Indicators (EWI)
+   ├─ Transmission Channels, Impact (High/Med/Low), Likelihood (High/Med/Realized)
+   ├─ 2×2 Risk Heatmap Matrix (Critical, Severe, Moderate, Active)
+   └─ Quantified Early Warning Indicators (EWI) & Flagged Disclosure Notes
+H. Strategic Recommendations & Primary Citations
+   ├─ Actionable Managerial & Capital Allocation Recommendations
+   └─ Comprehensive Primary Statutory Disclosures (Document, Filing Date, URL, Notes)
 ```
 
 ---
 
-## 7. 設計原則とコンプライアンス (Governance & Compliance)
+## 7. Multilingual Support (5 Global Institutional Standards)
 
-- **一次情報最優先の徹底**: 金融ポータルの二次集計データに依存せず、各国の証券取引所・規制当局に提出された一次開示書類を根拠とします。
-- **事実・分析・仮説の分離**: 開示された客観的数値（Fact）、指標から論理的に導かれる分析（Analysis）、将来のリスク・見通しに関する推論（Hypothesis）を明確に区分します。
-- **機密保持・セキュリティの遵守**: APIキーをGitで管理せず、ローカルストレージと一時インメモリトークンのみで扱います。リポジトリ外部への無断送信は一切行いません。
-- **投資助言の厳禁**: 本ソリューションは意思決定者向けの客観的な論点整理・財務分析に徹し、有価証券の売買推奨や投資判断は行いません。
+The platform provides complete multi-language switching without full-page reloads, adhering to institutional terminology in each jurisdiction:
+
+1. **🇯🇵 日本語 (`ja`)**: 日本の金融商品取引法開示基準、金融庁、東京証券取引所基準（有価証券報告書、決算短信、デュポン3要素分解、CCC）。
+2. **🇺🇸 English (US) (`en`)**: US SEC statutory reporting standards (Form 10-K/10-Q, US GAAP, 3-Stage DuPont, Cash Conversion Cycle, Net Debt / EBITDA).
+3. **🇨🇳 简体中文 (`zh-CN`)**: 中国企业会计准则与投资银行分析规范（法定年报、营业利润率、杜邦三阶段归因拆解、营运资金现金循环周期、净有息负债倍率）。
+4. **🇭🇰 繁體中文 (`zh-TW`)**: 港交所與台灣機構投資者財務分析標準（香港年報、股東權益報酬率 ROE、營業利益率、營運資金循環週期、淨有息負債倍率）。
+5. **🇫🇷 Français (`fr`)**: Normes IFRS, AMF et analyse financière d'entreprise (Rapports annuels certifiés, Décomposition DuPont en 3 étapes, Cycle du BFR, Dette Nette / EBITDA).
 
 ---
 
-*FinReAct Intelligence Platform — Built with Google Gemini, Antigravity Agentic Architecture, and Corporate Finance Analyst Standards.*
+## 8. Governance, Compliance & Complete Legal Disclaimer
+
+- **Primary Source Primacy**: The platform never relies on unsourced third-party portals or unofficial commentary; all baseline data must trace back to official statutory filings.
+- **Strict Separation of Facts, Analysis, and Hypotheses**: Disclosed figures (Fact), mathematical derivatives (Analysis), and predictive scenarios (Hypothesis) are explicitly labeled.
+- **Zero Key Leakage Security**: API keys are isolated strictly within client-side memory and short-lived in-memory backend sessions; keys are never persisted to disk, URLs, or repository logs.
+- **Academic Research Limitation**: This system is designed solely to advance the study of autonomous ReAct reasoning and transparent financial document analysis. **No commercial warranties, financial guarantees, or trading liability are assumed under any circumstances.**
+
+---
+
+*FinReAct Intelligence Platform — Developed strictly for academic and educational research. Built with Google Gemini, Antigravity Agentic Architecture, and Corporate Finance Analyst Standards.*
+

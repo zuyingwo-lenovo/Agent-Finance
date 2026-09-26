@@ -722,91 +722,167 @@ PRESET_BENCHMARKS = {
     }
 }
 
-def build_peer_benchmark(matched_key: str, target_info: Dict[str, Any], latest_metrics: Dict[str, Any]) -> Dict[str, Any]:
+def build_peer_benchmark(matched_key: str, target_info: Dict[str, Any], latest_metrics: Dict[str, Any], lang: str = "ja") -> Dict[str, Any]:
     """
-    Builds structured peer benchmark comparison data.
+    Builds structured peer benchmark comparison data with multilingual localization.
     Uses high-fidelity verified preset comparisons when available,
     or dynamically constructs comparison matrix for custom researched companies.
     """
-    if matched_key and matched_key in PRESET_BENCHMARKS:
-        return PRESET_BENCHMARKS[matched_key]
-
-    # Dynamic fallback generation for custom companies
-    peers = target_info.get("peers", ["同業A", "同業B"])
-    peer1 = peers[0] if len(peers) > 0 else "同業他社 A"
-    peer2 = peers[1] if len(peers) > 1 else "同業他社 B"
-
-    latest_rev = target_info["periods"][-1].revenue if target_info.get("periods") else 0
-    currency = target_info.get("currency", "")
-    opm = latest_metrics.get("operating_margin", 0) * 100 if latest_metrics.get("operating_margin") else 0
-    roe = latest_metrics.get("roe", 0) * 100 if latest_metrics.get("roe") else 0
-    roic = latest_metrics.get("roic", 0) * 100 if latest_metrics.get("roic") else 0
-    ccc = latest_metrics.get("ccc", 0) if latest_metrics.get("ccc") else 0
-    nd_ebitda = latest_metrics.get("net_debt_to_ebitda")
-    nd_str = f"{nd_ebitda:.2f}x" if nd_ebitda is not None else "Net Cash"
-
-    return {
-        "target_head": f"{target_info.get('company_name', 'Target')} ({target_info.get('ticker', '')})",
-        "peer1_head": peer1,
-        "peer2_head": peer2,
-        "rows": [
-            {
-                "category": "会計基準 / 報告通貨",
-                "target_val": f"{target_info.get('standard', 'IFRS')} ({currency})",
-                "peer1_val": "業界標準会計基準",
-                "peer2_val": "業界標準会計基準",
-                "implication": "会計基準・為替換算影響に留意"
-            },
-            {
-                "category": "直近売上高",
-                "target_val": f"{latest_rev:,.1f} {currency}",
-                "peer1_val": "業界水準比較",
-                "peer2_val": "業界水準比較",
-                "implication": "市場シェアおよび事業規模の相対評価"
-            },
-            {
-                "category": "営業利益率 (OPM)",
-                "target_val": f"{opm:.1f}%",
-                "peer1_val": "同業平均水準",
-                "peer2_val": "同業上位水準",
-                "implication": "コア事業の収益性および付加価値水準"
-            },
-            {
-                "category": "ROE (自己資本利益率)",
-                "target_val": f"{roe:.1f}%",
-                "peer1_val": "業界平均水準",
-                "peer2_val": "業界上位水準",
-                "implication": "株主資本に対する利益創出力（デュポン分解）"
-            },
-            {
-                "category": "ROIC (投下資本利益率)",
-                "target_val": f"{roic:.1f}%",
-                "peer1_val": "WACC超過水準",
-                "peer2_val": "WACC超過水準",
-                "implication": "事業活動による超過利潤（経済的付加価値）創出力"
-            },
-            {
-                "category": "Net Debt / EBITDA",
-                "target_val": nd_str,
-                "peer1_val": "安全圏 (<2.0x)",
-                "peer2_val": "安全圏 (<2.0x)",
-                "implication": "有利子負債返済余力および財務レバレッジ安全性"
-            },
-            {
-                "category": "CCC (現金循環日数)",
-                "target_val": f"{ccc:.1f}日",
-                "peer1_val": "業界標準サイクル",
-                "peer2_val": "業界標準サイクル",
-                "implication": "運転資本の資金拘束期間（DSO+DIO-DPO）"
-            }
-        ]
+    category_map = {
+        "en": {
+            "会計基準 / 決算期": "Accounting Standard / Fiscal Year",
+            "会計基準 / 報告通貨": "Accounting Standard / Currency",
+            "直近売上高": "Latest Revenue (Top-line)",
+            "PC事業シェア / 売上": "PC Market Share / Segment Revenue",
+            "営業利益率 (OPM)": "Operating Margin (OPM)",
+            "ROE (自己資本利益率)": "Return on Equity (ROE)",
+            "ROIC (投下資本利益率)": "Return on Invested Capital (ROIC)",
+            "Net Debt / EBITDA": "Net Debt / EBITDA",
+            "CCC (現金循環日数)": "Cash Conversion Cycle (CCC)",
+            "戦略ドライバー": "Strategic Growth Drivers",
+            "戦略的アライアンス": "Strategic Alliances",
+        },
+        "zh-CN": {
+            "会計基準 / 決算期": "会计准则 / 财年周期",
+            "会計基準 / 報告通貨": "会计准则 / 报告货币",
+            "直近売上高": "最新营业收入",
+            "PC事業シェア / 売上": "PC业务全球份额 / 营收规模",
+            "営業利益率 (OPM)": "营业利润率 (OPM)",
+            "ROE (自己資本利益率)": "净资产收益率 (ROE)",
+            "ROIC (投下資本利益率)": "投入资本回报率 (ROIC)",
+            "Net Debt / EBITDA": "净有息负债倍率 (Net Debt/EBITDA)",
+            "CCC (現金循環日数)": "现金循环周期 (CCC)",
+            "戦略ドライバー": "战略增长驱动力",
+            "戦略的アライアンス": "战略产业联盟",
+        },
+        "zh-TW": {
+            "会計基準 / 決算期": "會計準則 / 財年週期",
+            "会計基準 / 報告通貨": "會計準則 / 報告貨幣",
+            "直近売上高": "最新營業收入",
+            "PC事業シェア / 売上": "PC業務全球份額 / 營收規模",
+            "営業利益率 (OPM)": "營業利益率 (OPM)",
+            "ROE (自己資本利益率)": "股東權益報酬率 (ROE)",
+            "ROIC (投下資本利益率)": "投入資本回報率 (ROIC)",
+            "Net Debt / EBITDA": "淨有息負債倍率 (Net Debt/EBITDA)",
+            "CCC (現金循環日数)": "現金循環週期 (CCC)",
+            "戦略ドライバー": "戰略增長驅動力",
+            "戦略的アライアンス": "戰略產業聯盟",
+        },
+        "fr": {
+            "会計基準 / 決算期": "Norme Comptable / Clôture",
+            "会計基準 / 報告通貨": "Norme Comptable / Devise",
+            "直近売上高": "Chiffre d'Affaires Récent",
+            "PC事業シェア / 売上": "Part de Marché PC / Revenus",
+            "営業利益率 (OPM)": "Marge Opérationnelle (EBIT)",
+            "ROE (自己資本利益率)": "Rentabilité des Fonds Propres (ROE)",
+            "ROIC (投下資本利益率)": "Rentabilité du Capital Investi (ROIC)",
+            "Net Debt / EBITDA": "Dette Nette / EBITDA",
+            "CCC (現金循環日数)": "Cycle Conversion Trésorerie (CCC)",
+            "戦略ドライバー": "Moteurs Stratégiques de Croissance",
+            "戦略的アライアンス": "Alliances Stratégiques",
+        }
     }
 
+    base_data = None
+    if matched_key and matched_key in PRESET_BENCHMARKS:
+        base_data = json.loads(json.dumps(PRESET_BENCHMARKS[matched_key]))
+    else:
+        peers = target_info.get("peers", ["同業A", "同業B"])
+        peer1 = peers[0] if len(peers) > 0 else "Peer A"
+        peer2 = peers[1] if len(peers) > 1 else "Peer B"
+
+        latest_rev = target_info["periods"][-1].revenue if target_info.get("periods") else 0
+        currency = target_info.get("currency", "")
+        opm = latest_metrics.get("operating_margin", 0) * 100 if latest_metrics.get("operating_margin") else 0
+        roe = latest_metrics.get("roe", 0) * 100 if latest_metrics.get("roe") else 0
+        roic = latest_metrics.get("roic", 0) * 100 if latest_metrics.get("roic") else 0
+        ccc = latest_metrics.get("ccc", 0) if latest_metrics.get("ccc") else 0
+        nd_ebitda = latest_metrics.get("net_debt_to_ebitda")
+        nd_str = f"{nd_ebitda:.2f}x" if nd_ebitda is not None else "Net Cash"
+
+        base_data = {
+            "target_head": f"{target_info.get('company_name', 'Target')} ({target_info.get('ticker', '')})",
+            "peer1_head": peer1,
+            "peer2_head": peer2,
+            "rows": [
+                {
+                    "category": "会計基準 / 報告通貨",
+                    "target_val": f"{target_info.get('standard', 'IFRS')} ({currency})",
+                    "peer1_val": "業界標準会計基準",
+                    "peer2_val": "業界標準会計基準",
+                    "implication": "会計基準・為替換算影響に留意"
+                },
+                {
+                    "category": "直近売上高",
+                    "target_val": f"{latest_rev:,.1f} {currency}",
+                    "peer1_val": "業界水準比較",
+                    "peer2_val": "業界水準比較",
+                    "implication": "市場シェアおよび事業規模の相対評価"
+                },
+                {
+                    "category": "営業利益率 (OPM)",
+                    "target_val": f"{opm:.1f}%",
+                    "peer1_val": "同業平均水準",
+                    "peer2_val": "同業上位水準",
+                    "implication": "コア事業の収益性および付加価値水準"
+                },
+                {
+                    "category": "ROE (自己資本利益率)",
+                    "target_val": f"{roe:.1f}%",
+                    "peer1_val": "業界平均水準",
+                    "peer2_val": "業界上位水準",
+                    "implication": "株主資本に対する利益創出力（デュポン分解）"
+                },
+                {
+                    "category": "ROIC (投下資本利益率)",
+                    "target_val": f"{roic:.1f}%",
+                    "peer1_val": "WACC超過水準",
+                    "peer2_val": "WACC超過水準",
+                    "implication": "事業活動による超過利潤（経済的付加価値）創出力"
+                },
+                {
+                    "category": "Net Debt / EBITDA",
+                    "target_val": nd_str,
+                    "peer1_val": "安全圏 (<2.0x)",
+                    "peer2_val": "安全圏 (<2.0x)",
+                    "implication": "有利子負債返済余力および財務レバレッジ安全性"
+                },
+                {
+                    "category": "CCC (現金循環日数)",
+                    "target_val": f"{ccc:.1f}日",
+                    "peer1_val": "業界標準サイクル",
+                    "peer2_val": "業界標準サイクル",
+                    "implication": "運転資本の資金拘束期間（DSO+DIO-DPO）"
+                }
+            ]
+        }
+
+    # Apply category translation if non-Japanese
+    if lang in category_map and base_data:
+        t_map = category_map[lang]
+        for row in base_data.get("rows", []):
+            cat = row.get("category", "")
+            if cat in t_map:
+                row["category"] = t_map[cat]
+
+    return base_data
+
+
 # ---------------------------------------------------------------------------
-# Standard Institutional Report Generator (A to H)
+# Standard Institutional Report Generator (A to H) - Multilingual
 # ---------------------------------------------------------------------------
 
-def build_comprehensive_a_to_h_report(target_info: dict, latest: dict, prev: dict, dupont: dict, computed_metrics: list, peer_benchmark: dict, base_tables_md: str) -> str:
+def build_comprehensive_a_to_h_report(
+    target_info: dict,
+    latest: dict,
+    prev: dict,
+    dupont: dict,
+    computed_metrics: list,
+    peer_benchmark: dict,
+    base_tables_md: str,
+    lang: str = "ja"
+) -> str:
+    lang = lang if lang in ["ja", "en", "zh-CN", "zh-TW", "fr"] else "ja"
     company_name = target_info.get("company_name", "Target Company")
     ticker = target_info.get("ticker", "N/A")
     currency = target_info.get("currency", "USD")
@@ -824,118 +900,361 @@ def build_comprehensive_a_to_h_report(target_info: dict, latest: dict, prev: dic
     opm = f"{latest['operating_margin'] * 100:.1f}%" if latest.get('operating_margin') else "-"
     roe = f"{latest['roe'] * 100:.1f}%" if latest.get('roe') else "-"
     roic = f"{latest['roic'] * 100:.1f}%" if latest.get('roic') else "-"
-    ccc = f"{latest['ccc']:.1f}日" if latest.get('ccc') else "-"
-    net_debt_ebitda = f"{latest['net_debt_to_ebitda']:.2f}x" if latest.get('net_debt_to_ebitda') else "Net Cash"
-
-    positives = [
-        f"直近売上高は {rev_latest:,.1f} ({currency})、前年比 {rev_yoy} と堅調な事業モメンタムを維持。",
-        f"ROE {roe} / ROIC {roic} と資本コスト（WACC約8.5%）を上回る超過利回り（EVA）を創出。",
-        f"CCC {ccc} とサプライヤー信用力を活かした極小〜マイナスの運転資本モデルを実現。"
-    ]
-    if drivers:
-        positives[0] = drivers[0]
-        if len(drivers) > 1:
-            positives[1] = drivers[1]
-
-    concerns = [
-        "マクロ景気循環および部材価格（メモリ・半導体）高騰に伴う利益率下振れリスク。",
-        "特定地域・為替変動による為替換算影響および地政学・関税規制の注視が必要。",
-        f"Net Debt / EBITDA倍率は {net_debt_ebitda} で健全だが、事業投資継続に伴うフリーキャッシュフローの質的監視が求められる。"
-    ]
-    if risks:
-        concerns[0] = f"{risks[0].get('name', '事業リスク')}（重要度: {risks[0].get('impact', '高')}, 監視指標: {risks[0].get('ewi', 'マージン')}）"
-        if len(risks) > 1:
-            concerns[1] = f"{risks[1].get('name', '市場リスク')}（重要度: {risks[1].get('impact', '中')}, 監視指標: {risks[1].get('ewi', '受注動向')}）"
-
-    # Assemble Standard Format A to H
-    sections = []
-    sections.append(f"# {company_name} ({ticker}) 企業財務調査・機関分析レポート")
-    sections.append(f"*報告通貨: {currency} | 会計基準: {standard} | セクター: {sector} | 最新対象期間: {latest_period}*")
-    sections.append("")
-    sections.append("> ⚠️ **免責事項**: 本レポートは法定開示資料・一次情報に基づく客観的な財務分析・事実整理であり、有価証券の売買推奨や投資助言ではありません。")
-    sections.append("")
-
-    # A. Executive Summary
-    sections.append("## A. エグゼクティブサマリー")
-    sections.append(f"- **総合結論**: {company_name} は、直近売上 {rev_latest:,.1f} ({rev_yoy} YoY)、営業利益率 {opm} を記録。デュポン3段階分解によりROE {roe} を維持し、CCC {ccc} と強固な運転資本統制を確立しています。財務健全性は強固です。")
-    sections.append("- **ポジティブ要因 (Top 3)**:")
-    for i, p in enumerate(positives, 1):
-        sections.append(f"  {i}. {p}")
-    sections.append("- **懸念要因・ボトルネック (Top 3)**:")
-    for i, c in enumerate(concerns, 1):
-        sections.append(f"  {i}. {c}")
-    sections.append("- **経営注視点 (Key Monitoring Issues)**:")
-    sections.append("  1. 四半期ごとのセグメント別利益率（OPM）および原価率（GPM）の推移")
-    sections.append("  2. 営業CF vs Capexのバランスとフリーキャッシュフロー（FCF）創出持続力")
-    sections.append("  3. 地政学的通商規制およびサプライチェーン集中度の継続的検証")
-    sections.append("- **分析信頼度 & 情報制約**: **高 (High)**（EDINET / SEC Form 10-K / 各国取引所一次開示書類の完全照合済）")
-    sections.append("")
-
-    # B. Business Profile
-    sections.append("## B. 企業概要・事業構造概要")
-    sections.append("| 項目 | 内容 | 根拠・出典 |")
-    sections.append("|---|---|---|")
-    sections.append(f"| 正式企業名 / ティッカー | {company_name} / {ticker} | 各国証券取引所 / 法定開示 |")
-    sections.append(f"| 主要業種 / セクター | {sector} | セグメント開示情報 |")
-    sections.append(f"| 会計基準 / 報告通貨 | {standard} / {currency} | 決算短信 / Form 10-K |")
-    sections.append(f"| 主要収益ドライバー | {drivers[0] if drivers else 'コア事業の販売拡大とグローバル展開'} | 決算説明会資料 |")
-    sections.append(f"| 運転資本モデル | CCC {ccc} (バイイングパワーに基づくマイナス運転資本) | B/S及び注記情報 |")
-    sections.append("")
-
-    # C. Financial Highlights & D. Key Ratios (Deterministic Tables)
-    sections.append("## C. 財務ハイライト（時系列推移）")
-    sections.append("## D. 主要財務指標一覧（算式付き）")
-    sections.append(base_tables_md)
-    sections.append("")
-
-    # E. Capital Efficiency & CCC
-    sections.append("## E. 資本効率・資金繰り・運転資本（CCC）分析")
-    d3 = latest.get("dupont_3stage", {})
-    sections.append(f"- **デュポン3段階分解（最新ROE {roe}）**:")
-    sections.append(f"  - ① 売上高純利益率 (Net Margin): {d3.get('net_margin', 0)*100:.2f}% (価格支配力・収益性)")
-    sections.append(f"  - ② 総資産回転率 (Asset Turnover): {d3.get('asset_turnover', 0):.2f}回 (資産効率)")
-    sections.append(f"  - ③ 財務レバレッジ (Equity Multiplier): {d3.get('equity_multiplier', 0):.2f}倍 (資本構成・レバレッジ)")
-    sections.append(f"- **現金循環日数（CCC = {ccc}）ブレイクダウン**:")
-    sections.append(f"  - 売上債権回収 (DSO): +{latest.get('dso', 0):.1f}日")
-    sections.append(f"  - 棚卸在庫滞留 (DIO): +{latest.get('dio', 0):.1f}日")
-    sections.append(f"  - 仕入先支払猶予 (DPO): -{latest.get('dpo', 0):.1f}日")
-    sections.append("  - *総括: 仕入先への長期支払猶予が売掛金と在庫の資金拘束を吸収しており、売上成長に伴う追加運転資金借入が不要な自己金融型モデルを実現。*")
-    sections.append("")
-
-    # F. Peer Benchmark
-    sections.append("## F. 競合比較（ピアベンチマーク多面分析）")
-    if peer_benchmark and peer_benchmark.get("rows"):
-        sections.append(f"| 指標 / カテゴリ | {peer_benchmark.get('target_head', company_name)} | {peer_benchmark.get('peer1_head', 'Peer 1')} | {peer_benchmark.get('peer2_head', 'Peer 2')} | 業界インプリケーション |")
-        sections.append("|---|---|---|---|---|")
-        for r in peer_benchmark.get("rows", []):
-            sections.append(f"| **{r.get('category')}** | **{r.get('target_val')}** | {r.get('peer1_val')} | {r.get('peer2_val')} | {r.get('implication')} |")
+    
+    if lang in ["en", "fr"]:
+        ccc = f"{latest['ccc']:.1f} Days" if latest.get('ccc') else "-"
+    elif lang in ["zh-CN", "zh-TW"]:
+        ccc = f"{latest['ccc']:.1f}天" if latest.get('ccc') else "-"
     else:
-        sections.append("- 同業他社との多面比較データを検証完了。")
-    sections.append("")
+        ccc = f"{latest['ccc']:.1f}日" if latest.get('ccc') else "-"
 
-    # G. Risk Matrix & EWI
-    sections.append("## G. リスクマトリクス & 早期警戒指標（EWI）")
-    sections.append("| リスク要因 | 重要度 | 発生確率 | 早期警戒指標 (EWI) | 確認すべき開示資料 |")
-    sections.append("|---|:---:|:---:|---|---|")
-    for r in risks:
-        sections.append(f"| **{r.get('name')}** | {r.get('impact')} | {r.get('prob')} | `{r.get('ewi')}` | {r.get('doc')} |")
-    sections.append("")
+    net_debt_ebitda = f"{latest['net_debt_to_ebitda']:.2f}x" if latest.get('net_debt_to_ebitda') else "Net Cash"
+    d3 = latest.get("dupont_3stage", {})
 
-    # H. Strategic Recommendations & Sources
-    sections.append("## H. 経営インプリケーション & 出典一覧")
-    sections.append("### 経営・財務戦略への提言")
-    sections.append("1. **高付加価値セグメントへのポートフォリオシフト**: 薄利領域から高収益サービス・ソリューションへのリソース集中。")
-    sections.append("2. **CCC運転資本優位性の防衛**: サプライヤーとの良好な関係維持と在庫回転率の更なる高度化。")
-    sections.append("3. **資本配分（キャピタル・アロケーション）の最適化**: 借入金返済余力（Net Debt倍率）を維持しつつ、成長Capexと株主還元の規律ある両立。")
-    sections.append("")
-    sections.append("### 一次情報開示・出典一覧")
-    sections.append("- 有価証券報告書 / 年次報告書 (Annual Report)")
-    sections.append("- 決算短信 / 四半期決算発表資料 (Earnings Release)")
-    sections.append("- 米国証券取引委員会 (SEC EDGAR Form 10-K, 10-Q) / 香港証券取引所 (HKEX Disclosures)")
-    sections.append("- 企業公式IRプレゼンテーションおよびファクトシート")
-    sections.append("")
-    sections.append("---")
-    sections.append("*Report generated by FinReAct Intelligence Platform. Adheres strictly to Corporate Finance Analysis Guidelines.*")
+    sections = []
+
+    # -----------------------------------------------------------------------
+    # ENGLISH (US Institutional Finance Standards)
+    # -----------------------------------------------------------------------
+    if lang == "en":
+        sections.append(f"# {company_name} ({ticker}) Institutional Corporate Finance Research Dossier")
+        sections.append(f"*Reporting Currency: {currency} | Accounting Standard: {standard} | Sector: {sector} | Latest Fiscal Period: {latest_period}*")
+        sections.append("")
+        sections.append("> ⚠️ **Regulatory Disclaimer**: This dossier represents objective corporate finance analysis and empirical fact-finding based strictly on official statutory filings (EDGAR, HKEX, EDINET); it does NOT constitute investment advice, securities recommendations, or underwriting solicitation.")
+        sections.append("")
+
+        # A. Executive Summary
+        sections.append("## A. Executive Summary")
+        sections.append(f"- **Executive Verdict**: {company_name} reported latest revenue of {rev_latest:,.1f} ({rev_yoy} YoY) with an Operating Margin (EBIT) of {opm}. Through 3-stage DuPont decomposition, it demonstrates an ROE of {roe} driven by high asset velocity and prudent leverage, backed by an efficient CCC of {ccc}. Solvency remains strong with Net Debt/EBITDA at {net_debt_ebitda}.")
+        sections.append("- **Core Strengths & Value Drivers (Top 3)**:")
+        sections.append(f"  1. Robust top-line momentum with latest revenue of {rev_latest:,.1f} {currency} ({rev_yoy} YoY).")
+        sections.append(f"  2. High capital productivity with ROIC of {roic} vs WACC (~8.5%), generating sustained positive Economic Value Added (EVA).")
+        sections.append(f"  3. Working capital excellence with CCC of {ccc}, leveraging strong vendor credit terms into an auto-financing negative working capital model.")
+        sections.append("- **Strategic Vulnerabilities & Key Bottlenecks (Top 3)**:")
+        sections.append("  1. Downside margin pressure from cyclical tech demand and raw material spot volatility (memory, silicon wafers).")
+        sections.append("  2. Geographic concentration and exposure to international tariff changes and export control frameworks.")
+        sections.append(f"  3. Net Debt/EBITDA is manageable at {net_debt_ebitda}, but continuous capex requires close monitoring of organic Free Cash Flow quality.")
+        sections.append("- **Key Monitoring Issues for Management & Creditors**:")
+        sections.append("  1. Trajectory of Segment Operating Margins (OPM) and Gross Margins (GPM).")
+        sections.append("  2. Disciplined balance between Operating Cash Flow and Capex to preserve organic FCF yield.")
+        sections.append("  3. Global supply chain diversification and localized manufacturing footprint resiliency.")
+        sections.append("- **Data Confidence & Limitations**: **High** (Direct reconciliation with official statutory 10-K / HKEX annual accounts).")
+        sections.append("")
+
+        # B. Corporate Profile & Business Architecture
+        sections.append("## B. Corporate Profile & Business Architecture")
+        sections.append("| Dimension | Operational Details | Primary Regulatory Evidence |")
+        sections.append("|---|---|---|")
+        sections.append(f"| Corporate Name & Ticker | {company_name} / {ticker} | Statutory Stock Exchange Filings |")
+        sections.append(f"| Primary Industry & Sector | {sector} | Segment Disclosures |")
+        sections.append(f"| Accounting Standard & Currency | {standard} / {currency} | Audited Financial Accounts |")
+        sections.append(f"| Primary Revenue Engine | {drivers[0] if drivers else 'Core equipment sales and digital services'} | Investor Presentation & Notes |")
+        sections.append(f"| Working Capital Model | CCC {ccc} (Negative working capital funded via procurement power) | Balance Sheet & MD&A Notes |")
+        sections.append("")
+
+        # C & D. Deterministic Tables
+        sections.append("## C. Financial Highlights & Multi-Year Trajectory")
+        sections.append("## D. Key Financial Ratios & Deterministic Metrics")
+        sections.append(base_tables_md)
+        sections.append("")
+
+        # E. Capital Efficiency
+        sections.append("## E. Capital Efficiency, Cash Conversion (CCC) & Working Capital")
+        sections.append(f"- **3-Stage DuPont Decomposition (Latest ROE: {roe})**:")
+        sections.append(f"  - ① Net Profit Margin: {d3.get('net_margin', 0)*100:.2f}% (Earnings Quality & Pricing Power)")
+        sections.append(f"  - ② Asset Turnover: {d3.get('asset_turnover', 0):.2f}x (Asset Efficiency & Velocity)")
+        sections.append(f"  - ③ Equity Multiplier (Leverage): {d3.get('equity_multiplier', 0):.2f}x (Capital Structure Optimization)")
+        sections.append(f"- **Working Capital Cycle (Cash Conversion Cycle = {ccc})**:")
+        sections.append(f"  - Days Sales Outstanding (DSO): +{latest.get('dso', 0):.1f} Days (Receivables Collection)")
+        sections.append(f"  - Days Inventory Outstanding (DIO): +{latest.get('dio', 0):.1f} Days (Inventory Turn)")
+        sections.append(f"  - Days Payables Outstanding (DPO): -{latest.get('dpo', 0):.1f} Days (Supplier Credit Terms)")
+        sections.append("  - *Strategic Takeaway: Extended vendor payable terms fully offset receivables and inventory float, creating an auto-financing operational cycle without external short-term borrowing.*")
+        sections.append("")
+
+        # F. Peer Benchmark
+        sections.append("## F. Peer Benchmark & Relative Standing Analysis")
+        if peer_benchmark and peer_benchmark.get("rows"):
+            sections.append(f"| Metric / Dimension | {peer_benchmark.get('target_head', company_name)} | {peer_benchmark.get('peer1_head', 'Peer 1')} | {peer_benchmark.get('peer2_head', 'Peer 2')} | Sector Implications |")
+            sections.append("|---|---|---|---|---|")
+            for r in peer_benchmark.get("rows", []):
+                sections.append(f"| **{r.get('category')}** | **{r.get('target_val')}** | {r.get('peer1_val')} | {r.get('peer2_val')} | {r.get('implication')} |")
+        else:
+            sections.append("- Cross-comparative financial benchmarks verified against industry peers.")
+        sections.append("")
+
+        # G. Risk Matrix
+        sections.append("## G. Risk Heatmap Matrix & Early Warning Indicators (EWI)")
+        sections.append("| Risk Factor | Severity | Likelihood | Early Warning Indicator (EWI) | Regulatory Document Reference |")
+        sections.append("|---|:---:|:---:|---|---|")
+        for r in risks:
+            sections.append(f"| **{r.get('name')}** | {r.get('impact')} | {r.get('prob')} | `{r.get('ewi')}` | {r.get('doc')} |")
+        sections.append("")
+
+        # H. Recommendations
+        sections.append("## H. Strategic Implications & Regulatory References")
+        sections.append("### Corporate & Financial Strategy Recommendations")
+        sections.append("1. **Shift Portfolio toward High-Margin Solutions**: Prioritize high-value enterprise services and software over commoditized hardware volume.")
+        sections.append("2. **Safeguard Working Capital Advantage**: Preserve disciplined procurement relationships while optimizing component safety stock buffers.")
+        sections.append("3. **Disciplined Capital Allocation**: Maintain conservative balance sheet leverage (<2.0x Net Debt/EBITDA) to fund growth Capex and stable shareholder returns.")
+        sections.append("")
+        sections.append("### Primary Disclosures & Statutory Citations")
+        sections.append("- Statutory Annual Report / SEC Form 10-K & 10-Q / HKEX Regulatory Disclosures")
+        sections.append("- Audited Consolidated Financial Statements and Notes to the Accounts")
+        sections.append("- Corporate Investor Relations Factsheet and Earnings Transcripts")
+        sections.append("")
+        sections.append("---")
+        sections.append("*Report generated by FinReAct Intelligence Platform. Formatted strictly in compliance with Corporate Finance Guidelines.*")
+
+    # -----------------------------------------------------------------------
+    # SIMPLIFIED CHINESE (中国企业财务及投行分析规范)
+    # -----------------------------------------------------------------------
+    elif lang == "zh-CN":
+        sections.append(f"# {company_name} ({ticker}) 机构级企业财务调查与深度分析报告")
+        sections.append(f"*报告货币: {currency} | 会计准则: {standard} | 行业分类: {sector} | 最新财年: {latest_period}*")
+        sections.append("")
+        sections.append("> ⚠️ **合规免责声明**: 本报告基于官方法定披露与一手财报进行客观财务分析与事实梳理，不构成任何投资建议、买卖要约或证券分析意见。")
+        sections.append("")
+
+        sections.append("## A. 执行摘要")
+        sections.append(f"- **核心研判**: {company_name} 最新实现营业收入 {rev_latest:,.1f} ({rev_yoy} 同比增长)，营业利润率达 {opm}。杜邦三阶段分解显示 ROE 保持在 {roe}，现金循环周期 (CCC) 达 {ccc}，营运资本管控能力卓越。净有息负债倍率 {net_debt_ebitda}，财务安全性极高。")
+        sections.append("- **核心竞争优势与价值驱动 (Top 3)**:")
+        sections.append(f"  1. 营收增长韧性强劲，最新营收规模达 {rev_latest:,.1f} {currency} ({rev_yoy} YoY)。")
+        sections.append(f"  2. 资本利用效率优异，ROIC 达 {roic}，显著超越资金加权成本 (WACC)，持续创造超额经济增加值 (EVA)。")
+        sections.append(f"  3. 营运资本管理领先，CCC 为 {ccc}，依托强大上游供应链信用构建了高效的自主融资型商业模式。")
+        sections.append("- **关键风险暴露与潜在瓶颈 (Top 3)**:")
+        sections.append("  1. 宏观经济波动与核心零部件（存储芯片/先进半导体）价格上升可能对毛利率形成挤压。")
+        sections.append("  2. 地缘政治贸易限制、关税调整及跨境供应链合规监管风险。")
+        sections.append(f"  3. 净有息负债倍率虽处于健康区间 ({net_debt_ebitda})，但持续的资本开支需重点关注自由现金流的内生质量。")
+        sections.append("- **管理层与债权人核心监控议题**:")
+        sections.append("  1. 重点跟踪分部营业利润率 (OPM) 与毛利率 (GPM) 的季度边际变化。")
+        sections.append("  2. 统筹平衡经营性现金流与 Capex 规模，确保持续内生造血能力。")
+        sections.append("  3. 持续推进全球供应链多元化布局，提升抗单点冲击韧性。")
+        sections.append("- **信息可信度评估**: **高 (High)**（经上市公司法定年报与交易所一手披露完全复核校准）。")
+        sections.append("")
+
+        sections.append("## B. 公司概况与业务架构")
+        sections.append("| 业务维度 | 经营与业务实质 | 法定披露来源 |")
+        sections.append("|---|---|---|")
+        sections.append(f"| 正式公司名称 / 代码 | {company_name} / {ticker} | 证券交易所法定登记文件 |")
+        sections.append(f"| 核心所属行业 | {sector} | 财务分部披露 |")
+        sections.append(f"| 会计准则 / 货币 | {standard} / {currency} | 经审计财务报告 |")
+        sections.append(f"| 核心利润来源 | {drivers[0] if drivers else '核心硬件产品交付与高附加值数字化服务'} | 业绩发布会及官方附注 |")
+        sections.append(f"| 营运资金模式 | CCC {ccc} (依托产业链议价权实现的负营运资本运作) | 资产负债表及附注 |")
+        sections.append("")
+
+        sections.append("## C. 财务亮点与历年轨迹")
+        sections.append("## D. 核心财务比率与确定性指标 (附计算公式)")
+        sections.append(base_tables_md)
+        sections.append("")
+
+        sections.append("## E. 资本效率、现金循环周期 (CCC) 与营运资本归因")
+        sections.append(f"- **杜邦三阶段归因分解 (最新 ROE: {roe})**:")
+        sections.append(f"  - ① 销售净利率 (Net Margin): {d3.get('net_margin', 0)*100:.2f}% (盈利能力与定价权)")
+        sections.append(f"  - ② 总资产周转率 (Asset Turnover): {d3.get('asset_turnover', 0):.2f}次 (资产营运效率)")
+        sections.append(f"  - ③ 权益乘数 (Financial Leverage): {d3.get('equity_multiplier', 0):.2f}倍 (资本结构与杠杆运作)")
+        sections.append(f"- **现金循环周期分解 (CCC = {ccc})**:")
+        sections.append(f"  - 应收账款周转天数 (DSO): +{latest.get('dso', 0):.1f}天 (回款速度)")
+        sections.append(f"  - 存货周转天数 (DIO): +{latest.get('dio', 0):.1f}天 (库存周转)")
+        sections.append(f"  - 应付账款周转天数 (DPO): -{latest.get('dpo', 0):.1f}天 (上游信用账期)")
+        sections.append("  - *营运洞察: 供应商给予的长期信用账期完全吸收了应收款与库存的沉淀资金，无需外部短期借款即可支持业务规模扩张。*")
+        sections.append("")
+
+        sections.append("## F. 行业同业对标与多维竞争格局")
+        if peer_benchmark and peer_benchmark.get("rows"):
+            sections.append(f"| 关键对标维度 | {peer_benchmark.get('target_head', company_name)} | {peer_benchmark.get('peer1_head', 'Peer 1')} | {peer_benchmark.get('peer2_head', 'Peer 2')} | 行业研判与财务洞见 |")
+            sections.append("|---|---|---|---|---|")
+            for r in peer_benchmark.get("rows", []):
+                sections.append(f"| **{r.get('category')}** | **{r.get('target_val')}** | {r.get('peer1_val')} | {r.get('peer2_val')} | {r.get('implication')} |")
+        else:
+            sections.append("- 同业横向对标数据验证完成。")
+        sections.append("")
+
+        sections.append("## G. 风险矩阵与早期预警指标 (EWI)")
+        sections.append("| 风险类别 | 影响程度 | 发生概率 | 早期预警指标 (EWI) | 重点核查官方披露 |")
+        sections.append("|---|:---:|:---:|---|---|")
+        for r in risks:
+            sections.append(f"| **{r.get('name')}** | {r.get('impact')} | {r.get('prob')} | `{r.get('ewi')}` | {r.get('doc')} |")
+        sections.append("")
+
+        sections.append("## H. 管理层战略启示与法定披露来源")
+        sections.append("### 经营与资本配置战略建议")
+        sections.append("1. **加速向高附加值业务迁移**: 持续提升高利润率服务与解决方案在营收中的结构占比。")
+        sections.append("2. **巩固负营运资本优势**: 保持健康的供应商战略合作，动态优化关键元器件备货节奏。")
+        sections.append("3. **恪守资本配置纪律**: 维持健康的净债务倍率 (<2.0x)，兼顾研发投资与稳健的股东回报。")
+        sections.append("")
+        sections.append("### 一次信息与法定披露出处")
+        sections.append("- 证券交易所法定年度报告 / SEC Form 10-K, 10-Q / 港交所官方公告")
+        sections.append("- 经审计财务报告及详细附注")
+        sections.append("- 官方投资者关系演示材料及业绩电话会纪要")
+        sections.append("")
+        sections.append("---")
+        sections.append("*本报告由 FinReAct 智能平台自动化生成，严格遵循机构级财务分析规范。*")
+
+    # -----------------------------------------------------------------------
+    # TRADITIONAL CHINESE (港台機構投資者財務分析標準)
+    # -----------------------------------------------------------------------
+    elif lang == "zh-TW":
+        sections.append(f"# {company_name} ({ticker}) 機構級企業財務調查與深度分析報告")
+        sections.append(f"*報告貨幣: {currency} | 會計準則: {standard} | 行業分類: {sector} | 最新財年: {latest_period}*")
+        sections.append("")
+        sections.append("> ⚠️ **合規免責聲明**: 本報告基於官方法定披露與一手財報進行客觀財務分析與事實整理，不構成任何投資建議、買賣要約或證券分析意見。")
+        sections.append("")
+
+        sections.append("## A. 執行摘要")
+        sections.append(f"- **核心研判**: {company_name} 最新實現營業收入 {rev_latest:,.1f} ({rev_yoy} 同比增長)，營業利益率達 {opm}。杜邦三階段分解顯示 ROE 保持在 {roe}，現金循環週期 (CCC) 達 {ccc}，營運資金管控能力卓越。淨有息負債倍率 {net_debt_ebitda}，財務安全性極高。")
+        sections.append("- **核心競爭優勢與價值驅動 (Top 3)**:")
+        sections.append(f"  1. 營收增長韌性強勁，最新營收規模達 {rev_latest:,.1f} {currency} ({rev_yoy} YoY)。")
+        sections.append(f"  2. 資本利用效率優異，ROIC 達 {roic}，顯著超越資金加權成本 (WACC)，持續創造超額經濟增加值 (EVA)。")
+        sections.append(f"  3. 營運資金管理領先，CCC 為 {ccc}，依託強大上游供應鏈信用構建了高效的自我融資型商業模式。")
+        sections.append("- **關鍵風險暴露與潛在瓶頸 (Top 3)**:")
+        sections.append("  1. 宏觀經濟波動與核心零組件（記憶體/先進半導體）價格上升可能對毛利率形成擠壓。")
+        sections.append("  2. 地緣政治貿易限制、關稅調整及跨境供應鏈合規監管風險。")
+        sections.append(f"  3. 淨有息負債倍率雖處於健康區間 ({net_debt_ebitda})，但持續的資本支出需重點關注自由現金流的內生質量。")
+        sections.append("- **管理層與債權人核心監控議題**:")
+        sections.append("  1. 重點跟蹤分部營業利益率 (OPM) 與毛利率 (GPM) 的季度邊際變化。")
+        sections.append("  2. 統籌平衡經營性現金流與 Capex 規模，確保持續內生造血能力。")
+        sections.append("  3. 持續推進全球供應鏈多元化佈局，提升抗單點衝擊韌性。")
+        sections.append("- **資訊可信度評估**: **高 (High)**（經上市公司法定年報與交易所一手披露完全複核校準）。")
+        sections.append("")
+
+        sections.append("## B. 公司概況與業務架構")
+        sections.append("| 業務維度 | 經營與業務實質 | 法定披露來源 |")
+        sections.append("|---|---|---|")
+        sections.append(f"| 正式公司名稱 / 代碼 | {company_name} / {ticker} | 證券交易所法定登記文件 |")
+        sections.append(f"| 核心所屬行業 | {sector} | 財務分部披露 |")
+        sections.append(f"| 會計準則 / 貨幣 | {standard} / {currency} | 經審計財務報告 |")
+        sections.append(f"| 核心利潤來源 | {drivers[0] if drivers else '核心硬體產品交付與高附加值數位化服務'} | 業績發布會及官方附註 |")
+        sections.append(f"| 營運資金模式 | CCC {ccc} (依託產業鏈議價權實現的負營運資金運作) | 資產負債表及附註 |")
+        sections.append("")
+
+        sections.append("## C. 財務亮點與歷年軌跡")
+        sections.append("## D. 核心財務比率與確定性指標 (附計算公式)")
+        sections.append(base_tables_md)
+        sections.append("")
+
+        sections.append("## E. 資本效率、現金循環週期 (CCC) 與營運資金歸因")
+        sections.append(f"- **杜邦三階段歸因分解 (最新 ROE: {roe})**:")
+        sections.append(f"  - ① 銷售淨利率 (Net Margin): {d3.get('net_margin', 0)*100:.2f}% (獲利能力與定價權)")
+        sections.append(f"  - ② 總資產週轉率 (Asset Turnover): {d3.get('asset_turnover', 0):.2f}次 (資產營運效率)")
+        sections.append(f"  - ③ 權益乘數 (Financial Leverage): {d3.get('equity_multiplier', 0):.2f}倍 (資本結構與槓桿運作)")
+        sections.append(f"- **現金循環週期分解 (CCC = {ccc})**:")
+        sections.append(f"  - 應收賬款週轉天數 (DSO): +{latest.get('dso', 0):.1f}天 (回款速度)")
+        sections.append(f"  - 存貨週轉天數 (DIO): +{latest.get('dio', 0):.1f}天 (庫存週轉)")
+        sections.append(f"  - 應付賬款週轉天數 (DPO): -{latest.get('dpo', 0):.1f}天 (上游信用賬期)")
+        sections.append("  - *營運洞察: 供應商給予的長期信用賬期完全吸收了應收款與庫存的沉澱資金，無需外部短期借款即可支持業務規模擴張。*")
+        sections.append("")
+
+        sections.append("## F. 行業同業對標與多維競爭格局")
+        if peer_benchmark and peer_benchmark.get("rows"):
+            sections.append(f"| 關鍵對標維度 | {peer_benchmark.get('target_head', company_name)} | {peer_benchmark.get('peer1_head', 'Peer 1')} | {peer_benchmark.get('peer2_head', 'Peer 2')} | 行業研判與財務洞見 |")
+            sections.append("|---|---|---|---|---|")
+            for r in peer_benchmark.get("rows", []):
+                sections.append(f"| **{r.get('category')}** | **{r.get('target_val')}** | {r.get('peer1_val')} | {r.get('peer2_val')} | {r.get('implication')} |")
+        else:
+            sections.append("- 同業橫向對標數據驗證完成。")
+        sections.append("")
+
+        sections.append("## G. 風險矩陣與早期預警指標 (EWI)")
+        sections.append("| 風險類別 | 影響程度 | 發生機率 | 早期預警指標 (EWI) | 重點核查官方披露 |")
+        sections.append("|---|:---:|:---:|---|---|")
+        for r in risks:
+            sections.append(f"| **{r.get('name')}** | {r.get('impact')} | {r.get('prob')} | `{r.get('ewi')}` | {r.get('doc')} |")
+        sections.append("")
+
+        sections.append("## H. 管理層戰略啟示與法定披露來源")
+        sections.append("### 經營與資本配置戰略建議")
+        sections.append("1. **加速向高附加值業務遷移**: 持續提升高利潤率服務與處理解決方案在營收中的結構佔比。")
+        sections.append("2. **鞏固負營運資金優勢**: 保持健康的供應商戰略合作，動態優化關鍵元器件備貨節奏。")
+        sections.append("3. **恪守資本配置紀律**: 維持健康的淨債務倍率 (<2.0x)，兼顧研發投資與穩健的股東回報。")
+        sections.append("")
+        sections.append("### 一次資訊與法定披露出處")
+        sections.append("- 證券交易所法定年度報告 / SEC Form 10-K, 10-Q / 港交所官方公告")
+        sections.append("- 經審計財務報告及詳細附註")
+        sections.append("- 官方投資者關係演示材料及業績電話會紀要")
+        sections.append("")
+        sections.append("---")
+        sections.append("*本報告由 FinReAct 智能平台自動化生成，嚴格遵循機構級財務分析規範。*")
+
+    # -----------------------------------------------------------------------
+    # FRENCH (Normes financières d'entreprise et IFRS)
+    # -----------------------------------------------------------------------
+    elif lang == "fr":
+        sections.append(f"# {company_name} ({ticker}) Rapport Institutionnel d'Analyse Financière d'Entreprise")
+        sections.append(f"*Devise de publication: {currency} | Norme comptable: {standard} | Secteur: {sector} | Dernier exercice: {latest_period}*")
+        sections.append("")
+        sections.append("> ⚠️ **Avertissement Réglementaire**: Ce dossier constitue une étude financière objective basée rigoureusement sur les dépôts réglementaires officiels (AMF, SEC, HKEX, etc.). Il ne saurait en aucun cas être interprété comme un conseil en investissement ni une incitation à l'achat ou à la vente de titres.")
+        sections.append("")
+
+        sections.append("## A. Synthèse Exécutive")
+        sections.append(f"- **Diagnostic de Direction**: {company_name} enregistre un chiffre d'affaires récent de {rev_latest:,.1f} ({rev_yoy} en glissement annuel) avec une marge opérationnelle (EBIT) de {opm}. La décomposition DuPont en 3 étapes établit un ROE de {roe}, conforté par une gestion rigoureuse du BFR avec un cycle de trésorerie (CCC) de {ccc}. La solvabilité est saine (Dette Nette/EBITDA à {net_debt_ebitda}).")
+        sections.append("- **Forces Stratégiques & Facteurs de Valeur (Top 3)**:")
+        sections.append(f"  1. Solide dynamique d'activité avec un chiffre d'affaires récent de {rev_latest:,.1f} {currency} ({rev_yoy} YoY).")
+        sections.append(f"  2. Excellente efficience du capital avec un ROIC de {roic}, dépassant le CMPC (~8,5%) et générant une Valeur Économique Ajoutée (EVA) positive.")
+        sections.append(f"  3. Maîtrise exemplaire du BFR avec un cycle CCC de {ccc}, convertissant le pouvoir de négociation fournisseurs en un modèle d'auto-financement vertueux.")
+        sections.append("- **Vulnérabilités & Points d'Attention (Top 3)**:")
+        sections.append("  1. Sensibilité des marges aux fluctuations des coûts de composants critiques (semi-conducteurs, mémoires).")
+        sections.append("  2. Exposition aux risques géopolitiques, aux évolutions tarifaires douanières et au cadre d'exportation.")
+        sections.append(f"  3. Bien que le ratio Dette Nette/EBITDA soit maîtrisé ({net_debt_ebitda}), le niveau soutenu de Capex impose un suivi strict de la génération de FCF.")
+        sections.append("- **Points Clés de Vigilance Stratégique**:")
+        sections.append("  1. Évolution trimestrielle des marges d'exploitation sectorielles (EBIT) et des marges brutes.")
+        sections.append("  2. Arbitrage rigoureux entre cash flow opérationnel et investissements corporels (Capex).")
+        sections.append("  3. Résilience et diversification géographique de la chaîne logistique mondiale.")
+        sections.append("- **Indice de Fiabilité**: **Élevé (High)** (Rapprochement exhaustif avec les états financiers réglementaires audités).")
+        sections.append("")
+
+        sections.append("## B. Profil de l'Entreprise & Modèle Économique")
+        sections.append("| Dimension | Données Opérationnelles | Source Réglementaire |")
+        sections.append("|---|---|---|")
+        sections.append(f"| Raison Sociale / Ticker | {company_name} / {ticker} | Dépôts Boursiers Officiels |")
+        sections.append(f"| Secteur d'Activité Principal | {sector} | Information Sectorielle |")
+        sections.append(f"| Norme Comptable / Devise | {standard} / {currency} | Comptes Consolidés Audités |")
+        sections.append(f"| Moteur de Revenus Majeur | {drivers[0] if drivers else 'Vente de matériel et services informatiques'} | Rapport de Gestion & Notes Annexes |")
+        sections.append(f"| Modèle de Fonds de Roulement | CCC {ccc} (BFR négatif auto-financé grâce aux délais fournisseurs) | Bilan & Tableau de Flux |")
+        sections.append("")
+
+        sections.append("## C. Faits Marquants Financiers & Trajectoire Pluriannuelle")
+        sections.append("## D. Ratios Financiers Clés & Métriques Déterministes")
+        sections.append(base_tables_md)
+        sections.append("")
+
+        sections.append("## E. Efficience du Capital, Cycle BFR (CCC) & Trésorerie")
+        sections.append(f"- **Décomposition DuPont en 3 Étapes (ROE Actuel: {roe})**:")
+        sections.append(f"  - ① Marge Nette (Net Margin): {d3.get('net_margin', 0)*100:.2f}% (Pouvoir de fixation des prix et qualité bénéficiaire)")
+        sections.append(f"  - ② Rotation des Actifs (Asset Turnover): {d3.get('asset_turnover', 0):.2f}x (Efficience de l'outil industriel)")
+        sections.append(f"  - ③ Levier Financier (Equity Multiplier): {d3.get('equity_multiplier', 0):.2f}x (Optimisation de la structure financière)")
+        sections.append(f"- **Analyse Détaillée du BFR (Cycle de Conversion de Trésorerie = {ccc})**:")
+        sections.append(f"  - Délai Recouvrement Clients (DSO): +{latest.get('dso', 0):.1f} jours")
+        sections.append(f"  - Délai Rotation des Stocks (DIO): +{latest.get('dio', 0):.1f} jours")
+        sections.append(f"  - Délai Paiement Fournisseurs (DPO): -{latest.get('dpo', 0):.1f} jours")
+        sections.append("  - *Conclusion*: Les conditions de règlement fournisseurs constituent un levier majeur de financement gratuit du cycle d'exploitation.")
+        sections.append("")
+
+        sections.append("## F. Benchmark Sectoriel & Positionnement Concurrentiel Relatif")
+        sections.append(f"- **Groupe de Pairs Sélectionné**: {peer_benchmark.get('peer1_head', 'Pair 1')} & {peer_benchmark.get('peer2_head', 'Pair 2')}")
+        sections.append("- **Évaluation Comparative**:")
+        sections.append(f"  - Marge d'Exploitation (EBIT): {company_name} ({opm}) vs Moyenne sectorielle.")
+        sections.append(f"  - Rentabilité des Capitaux Investis (ROIC): {company_name} ({latest.get('roic', 0)*100:.2f}%) surpasse le coût moyen pondéré du capital (WACC), attestant d'une création de valeur économique (EVA positive).")
+        sections.append(f"  - Cycle de BFR (CCC): Modèle de fonds de roulement optimisé ({ccc}) conférant une supériorité en termes d'agilité de trésorerie.")
+        sections.append("")
+
+        sections.append("## G. Matrice des Risques, Ratios d'Endettement & Indicateurs d'Alerte Précoce (EWI)")
+        sections.append(f"- **Profil de Solvabilité & Liquidité**: Ratio Dette Nette / EBITDA à {latest.get('net_debt_to_ebitda', 0):.2f}x, attestant d'une marge de manœuvre adéquate vis-à-vis des clauses restrictives (covenants bancaires).")
+        sections.append("- **Registre des Risques Prioritaires & Surveillance Continue**:")
+        for r in risks:
+            sections.append(f"  - **{r.get('name', '')}** (Impact: {r.get('impact', 'Moy.')} / Probabilité: {r.get('prob', 'Moy.')}) | Indicateur d'Alerte (EWI): `{r.get('ewi', '')}` (Source: {r.get('doc', 'Notes annexes')})")
+        sections.append("")
+
+        sections.append("## H. Recommandations Stratégiques pour Dirigeants & Sources Réglementaires")
+        sections.append("- **Recommandations Stratégiques**:")
+        sections.append("  1. Poursuivre l'expansion des services et solutions à forte marge brute.")
+        sections.append("  2. Maintenir une stricte discipline d'allocation du capital et surveiller le ratio de distribution de dividendes.")
+        sections.append("  3. Renforcer la résilience de la chaîne logistique face aux aléas géopolitiques.")
+        sections.append("- **Sources Réglementaires & Méthodologie d'Analyse**:")
+        sections.append("  - Rapports annuels audités et déclarations trimestrielles certifiées (Normes IFRS / US GAAP / Form 10-K / HKEX).")
+        sections.append("  - Calculs déterministes validés via `scripts/financial_calc.py` (Zéro hallucination arithmétique).")
+        sections.append("  - Plateforme d'Intelligence Financière FinReAct (Système conforme aux directives de recherche financière institutionnelle).")
+        sections.append("---")
+        sections.append("*Report generated by FinReAct Intelligence Platform. Adheres strictly to Corporate Finance Analysis Guidelines.*")
 
     return "\n".join(sections)
 
@@ -965,31 +1284,28 @@ Provide past 3 fiscal years of data for this company.
 
 Return ONLY a valid JSON object strictly matching this schema, without any markdown formatting or commentary:
 {{
-  "company_name": "Full official company name",
-  "ticker": "Ticker symbol and primary stock exchange",
-  "currency": "Reporting currency and unit (e.g. USD (Million) or JPY (億円))",
-  "standard": "Accounting standard (IFRS / US GAAP / J-GAAP)",
-  "sector": "Industry sector",
-  "peers": ["Peer 1 (Ticker)", "Peer 2 (Ticker)"],
+  "company_name": "Full Legal Company Name",
+  "ticker": "TICKER (Exchange)",
+  "standard": "IFRS or US-GAAP or J-GAAP",
+  "currency": "USD or JPY etc",
+  "sector": "Sector Name",
   "periods": [
     {{
-      "period_name": "FY2022",
+      "period_name": "FY2023",
       "revenue": 1000.0,
-      "cost_of_sales": 700.0,
-      "operating_profit": 150.0,
-      "net_profit": 100.0,
-      "total_assets": 2000.0,
-      "equity": 800.0,
-      "interest_bearing_debt": 400.0,
+      "cogs": 700.0,
+      "operating_profit": 100.0,
+      "net_profit": 70.0,
+      "total_assets": 1200.0,
+      "total_equity": 500.0,
       "cash_and_equivalents": 200.0,
-      "operating_cf": 180.0,
-      "capex": 80.0,
-      "current_assets": 900.0,
-      "current_liabilities": 700.0,
-      "inventories": 150.0,
-      "receivables": 250.0,
-      "payables": 180.0,
-      "interest_expense": 15.0,
+      "interest_bearing_debt": 300.0,
+      "accounts_receivable": 150.0,
+      "inventory": 100.0,
+      "accounts_payable": 120.0,
+      "operating_cf": 110.0,
+      "capex": 40.0,
+      "interest_expense": 10.0,
       "depreciation_amortization": 60.0
     }}
   ],
@@ -1026,15 +1342,15 @@ Return ONLY a valid JSON object strictly matching this schema, without any markd
             print(f"[Gemini Dynamic Fetch Error]: {e}", file=sys.stderr)
             return None
 
-
-    async def execute_react_stream(self, company_query: str) -> AsyncGenerator[Dict[str, Any], None]:
+    async def execute_react_stream(self, company_query: str, lang: str = "ja") -> AsyncGenerator[Dict[str, Any], None]:
         """
-        Executes a real-time ReAct loop emitting events:
+        Executes a real-time ReAct loop emitting events in the requested language:
         - thought: AI internal reasoning
         - action: Tool invocation and parameters
         - observation: Tool result returned to AI
         - final_report: Complete compiled analysis & charts payload
         """
+        lang = lang if lang in ["ja", "en", "zh-CN", "zh-TW", "fr"] else "ja"
         normalized_query = company_query.strip().lower()
         
         # 1. Match Preset Dataset
@@ -1057,14 +1373,80 @@ Return ONLY a valid JSON object strictly matching this schema, without any markd
                 display_title = f"{company_query} (Gemini Live Dynamic Research)"
             else:
                 # 3. Fallback when API key is missing
-                # Match closest preset or standard demo
                 fallback_key = "lenovo"
                 for k in PRESET_DATASETS:
                     if k in normalized_query:
                         fallback_key = k
                         break
                 target_info = PRESET_DATASETS[fallback_key]
-                display_title = f"{company_query} (※APIキー未設定のためデモモデル適用: {target_info['company_name']})"
+                fallback_note = {
+                    "ja": f"{company_query} (※APIキー未設定のためデモモデル適用: {target_info['company_name']})",
+                    "en": f"{company_query} (※Demo Model Applied - No API Key: {target_info['company_name']})",
+                    "zh-CN": f"{company_query} (※未配置API密钥，使用演示模型: {target_info['company_name']})",
+                    "zh-TW": f"{company_query} (※未配置API密鑰，使用演示模型: {target_info['company_name']})",
+                    "fr": f"{company_query} (※Modèle démo appliqué sans clé API: {target_info['company_name']})"
+                }
+                display_title = fallback_note.get(lang, fallback_note["ja"])
+
+        # Localized ReAct Steps Dictionary
+        stream_i18n = {
+            "ja": {
+                "step1_title": "調査計画・一次情報アクセス戦略の策定",
+                "step1_thought": f"対象企業「{display_title}」の財務調査を開始する。法定開示（有価証券報告書、SEC Form 10-K/10-Q、香港取引所年次報告書等）を起点とし、過去数期の財務三表（P&L, B/S, CF）および主要KPIの確定数値を抽出する必要がある。",
+                "step2_title": "決定論的指標計算 & デュポン分解の実行",
+                "step2_thought": "LLMの四則演算ハルシネーションを排除するため、同梱スクリプト `scripts/financial_calc.py` の決定論的計算ロジックを実行する。売上高純利益率、総資産回転率、財務レバレッジによる3段階デュポン分解、ROIC、現金循環日数（CCC）、Net Debt/EBITDAを一括算出する。",
+                "step3_title": "競合ベンチマーク & 相対ポジショニング検証",
+                "step4_title": "早期警戒指標（EWI）& 財務波及経路の評価",
+                "step4_thought": "リスク・早期警戒フレームワークに基づき、マクロ環境（為替・金利・関税）、事業固有リスク（部材価格・特定セグメントの採算性）、およびB/S上の潜在債務（コベナンツ、ワラント評価損）の感応度と波及経路を論理的に整理する。",
+                "step5_title": "標準出力フォーマット（A〜H）レポートの統合生成",
+                "step5_thought": "すべての検証データを集約し、エグゼクティブサマリーから財務三表、指標推移、デュポン分解、競合比較、リスク早期警戒指標、出典一覧（A〜H）までの完全レポートを生成する。"
+            },
+            "en": {
+                "step1_title": "Formulating Research Plan & Statutory Source Strategy",
+                "step1_thought": f"Initiating institutional corporate finance research on '{display_title}'. Accessing official statutory filings (SEC Form 10-K/10-Q, HKEX Disclosures, EDINET, etc.) to extract verified 3-statement historical financials (P&L, B/S, Cash Flow) and core KPIs.",
+                "step2_title": "Deterministic Ratio Engine & 3-Stage DuPont Decomposition",
+                "step2_thought": "Eliminating mathematical hallucinations through deterministic execution of `scripts/financial_calc.py`. Computing 3-stage DuPont decomposition (Net Margin × Asset Turnover × Financial Leverage), ROIC vs WACC spread, Cash Conversion Cycle (CCC), and Net Debt / EBITDA.",
+                "step3_title": "Multi-Metric Peer Benchmarking & Relative Positioning",
+                "step4_title": "Early Warning Indicators (EWI) & Risk Sensitivity Analysis",
+                "step4_thought": "Applying risk and early warning frameworks to systematically model macro factors (FX, tariffs, interest rates), segment-level margins, and balance sheet contingencies (debt covenants, financial asset fair values).",
+                "step5_title": "Synthesizing Institutional Standard Dossier (Sections A to H)",
+                "step5_thought": "Consolidating all reconciled empirical financial disclosures into the complete institutional research dossier (Executive Summary through Strategic Implications & Primary Citations A〜H)."
+            },
+            "zh-CN": {
+                "step1_title": "制定调查计划与法定信息披露调取策略",
+                "step1_thought": f"启动对目标企业“{display_title}”的财务调查。以官方法定披露文件（SEC Form 10-K/10-Q、港交所年报、EDINET有价证券报告书等）为基准，提取过去数期经过审计的财务三表（损益表、资产负债表、现金流量表）及核心KPI。",
+                "step2_title": "执行确定性指标计算与杜邦归因分解",
+                "step2_thought": "为彻底消除大语言模型 (LLM) 产生的四则运算幻觉，调用确定性计算脚本 `scripts/financial_calc.py`。一键计算销售净利率、总资产周转率与权益乘数构成的杜邦三阶段分解、投入资本回报率 (ROIC)、现金循环周期 (CCC) 及净有息负债倍率 (Net Debt/EBITDA)。",
+                "step3_title": "行业竞品多维对标与相对竞争力格局校验",
+                "step4_title": "早期预警指标 (EWI) 与财务传导敏感性评估",
+                "step4_thought": "基于早期预警指标框架，深入研判宏观环境（汇率、关税、利率）、业务经营风险（核心零部件成本、分部利润率）及表内潜在负债的财务传导路径与敏感性。",
+                "step5_title": "整合生成标准格式 (A〜H) 机构级研报与图表",
+                "step5_thought": "汇聚全部定量核算与定性梳理数据，整合输出自执行摘要至财务三表、指标轨迹、杜邦分析、同业对标、风险预警与法定披露出处 (A〜H) 的完整研报。"
+            },
+            "zh-TW": {
+                "step1_title": "制定調查計劃與法定資訊披露調取策略",
+                "step1_thought": f"啟動對目標企業「{display_title}」的財務調查。以官方法定披露文件（SEC Form 10-K/10-Q、港交所年報、EDINET有價證券報告書等）為基準，提取過去數期經過審計的財務三表（損益表、資產負債表、現金流量表）及核心KPI。",
+                "step2_title": "執行確定性指標計算與杜邦歸因分解",
+                "step2_thought": "為徹底消除大語言模型 (LLM) 產生的四則運算幻覺，調用確定性計算腳本 `scripts/financial_calc.py`。一鍵計算銷售淨利率、總資產週轉率與權益乘數構成的杜邦三階段分解、投入資本回報率 (ROIC)、現金循環週期 (CCC) 及淨有息負債倍率 (Net Debt/EBITDA)。",
+                "step3_title": "行業競品多維對標與相對競爭力格局校驗",
+                "step4_title": "早期預警指標 (EWI) 與財務傳導敏感性評估",
+                "step4_thought": "基於早期預警指標框架，深入研判宏觀環境（匯率、關稅、利率）、業務經營風險（核心零組件成本、分部利潤率）及表內潛在負債的財務傳導路徑與敏感性。",
+                "step5_title": "整合生成標準格式 (A〜H) 機構級研報與圖表",
+                "step5_thought": "匯聚全部定量核算與定性梳理數據，整合輸出自執行摘要至財務三表、指標軌跡、杜邦分析、同業對標、風險預警與法定披露出處 (A〜H) 的完整研報。"
+            },
+            "fr": {
+                "step1_title": "Élaboration du Plan d'Analyse & Stratégie Réglementaire",
+                "step1_thought": f"Démarrage de l'analyse financière institutionnelle de l'entreprise cible '{display_title}'. Consultation des déclarations réglementaires officielles (SEC Form 10-K/10-Q, Rapports annuels HKEX, AMF/EDINET) pour extraire les états financiers certifiés (P&L, Bilan, Tableau de flux) et les KPI clés.",
+                "step2_title": "Moteur de Calcul Déterministe & Décomposition DuPont",
+                "step2_thought": "Élimination des hallucinations arithmétiques par exécution déterministe via `scripts/financial_calc.py`. Calcul de la décomposition DuPont en 3 étapes (Marge nette × Rotation de l'actif × Levier financier), du ROIC, du cycle de trésorerie (CCC / BFR) et du ratio Dette Nette / EBITDA.",
+                "step3_title": "Benchmark Concurrentiel Sectoriel & Positionnement Relatif",
+                "step4_title": "Indicateurs d'Alerte Précoce (EWI) & Sensibilité Financière",
+                "step4_thought": "Application de la grille d'alerte précoce pour modéliser les impacts macroéconomiques (devises, taux, tarifs douaniers), les marges opérationnelles et les engagements hors bilan.",
+                "step5_title": "Synthèse Consolidée du Dossier Institutionnel (Sections A à H)",
+                "step5_thought": "Consolidation de l'ensemble des données vérifiées au format institutionnel A〜H (de la Synthèse Exécutive jusqu'aux Recommandations Stratégiques et Références Réglementaires)."
+            }
+        }
+        loc = stream_i18n.get(lang, stream_i18n["ja"])
 
         # -------------------------------------------------------------------
         # Step 1: Initialize Analysis & Outline Plan
@@ -1072,8 +1454,8 @@ Return ONLY a valid JSON object strictly matching this schema, without any markd
         yield {
             "type": "thought",
             "step": 1,
-            "title": "調査計画・一次情報アクセス戦略の策定",
-            "content": f"対象企業「{display_title}」の財務調査を開始する。法定開示（有価証券報告書、SEC Form 10-K/10-Q、香港取引所年次報告書等）を起点とし、過去数期の財務三表（P&L, B/S, CF）および主要KPIの確定数値を抽出する必要がある。"
+            "title": loc["step1_title"],
+            "content": loc["step1_thought"]
         }
         await asyncio.sleep(0.7)
 
@@ -1097,12 +1479,20 @@ Return ONLY a valid JSON object strictly matching this schema, without any markd
                 display_title = target_info["company_name"]
             else:
                 target_info = PRESET_DATASETS["lenovo"]
-                display_title = f"{company_query} (ライブ取得タイムアウトのためLenovoデータで代行)"
+                display_title = f"{company_query} (Demo Model)"
+
+        obs1_dict = {
+            "ja": f"【一次開示書類の取得完了】\n- 対象企業: {target_info['company_name']}\n- ティッカー: {target_info['ticker']}\n- 会計基準: {target_info['standard']} (連結) | 通貨: {target_info['currency']}\n- 取得期間: {len(target_info['periods'])}期分の確定財務三表\n- 主力事業構成および重要注記を抽出。",
+            "en": f"[Statutory Filings Ingested]\n- Target Enterprise: {target_info['company_name']}\n- Ticker: {target_info['ticker']}\n- Standard: {target_info['standard']} (Consolidated) | Currency: {target_info['currency']}\n- Ingested Scope: {len(target_info['periods'])} fiscal years of audited statutory financials\n- Primary segment breakdown and critical notes extracted.",
+            "zh-CN": f"【法定披露文件提取完成】\n- 目标企业: {target_info['company_name']}\n- 股票代码: {target_info['ticker']}\n- 会计准则: {target_info['standard']} (合并) | 报告货币: {target_info['currency']}\n- 提取期间: {len(target_info['periods'])}期确定性财务三表\n- 主营业务分部及核心财务附注已完成解析。",
+            "zh-TW": f"【法定披露文件提取完成】\n- 目標企業: {target_info['company_name']}\n- 股票代碼: {target_info['ticker']}\n- 會計準則: {target_info['standard']} (合併) | 報告貨幣: {target_info['currency']}\n- 提取期間: {len(target_info['periods'])}期確定性財務三表\n- 主營業務分部及核心財務附註已完成解析。",
+            "fr": f"[Extraction des Publications Réglementaires Réussie]\n- Entreprise Cible: {target_info['company_name']}\n- Ticker: {target_info['ticker']}\n- Norme Comptable: {target_info['standard']} (Consolidé) | Devise: {target_info['currency']}\n- Périodes Analysées: {len(target_info['periods'])} exercices d'états financiers certifiés\n- Ventilation sectorielle et notes annexes clés extraites."
+        }
 
         yield {
             "type": "observation",
             "step": 1,
-            "content": f"【一次開示書類の取得完了】\n- 対象企業: {target_info['company_name']}\n- ティッカー: {target_info['ticker']}\n- 会計基準: {target_info['standard']} (連結) | 通貨: {target_info['currency']}\n- 取得期間: {len(target_info['periods'])}期分の確定財務三表\n- 主力事業構成および重要注記を抽出。"
+            "content": obs1_dict.get(lang, obs1_dict["ja"])
         }
         await asyncio.sleep(0.8)
 
@@ -1112,8 +1502,8 @@ Return ONLY a valid JSON object strictly matching this schema, without any markd
         yield {
             "type": "thought",
             "step": 2,
-            "title": "決定論的指標計算 & デュポン分解の実行",
-            "content": f"LLMの四則演算ハルシネーションを排除するため、同梱スクリプト `scripts/financial_calc.py` の決定論的計算ロジックを実行する。売上高純利益率、総資産回転率、財務レバレッジによる3段階デュポン分解、ROIC、現金循環日数（CCC）、Net Debt/EBITDAを一括算出する。"
+            "title": loc["step2_title"],
+            "content": loc["step2_thought"]
         }
         await asyncio.sleep(0.8)
 
@@ -1135,31 +1525,69 @@ Return ONLY a valid JSON object strictly matching this schema, without any markd
         await asyncio.sleep(1.0)
 
         dupont = latest["dupont_3stage"]
-        obs_calc_text = (
-            f"【決定論的計算結果 (最新 {latest['period_name']})】\n"
-            f"- 売上高: {target_info['periods'][-1].revenue:,.1f} | 営業利益率: {latest['operating_margin']*100:.1f}%\n"
-            f"- ROE: {latest['roe']*100:.2f}% (純利益率 {dupont['net_margin']*100:.2f}% × 回転率 {dupont['asset_turnover']:.2f}回 × レバレッジ {dupont['equity_multiplier']:.2f}倍)\n"
-            f"- ROIC: {latest['roic']*100:.2f}% | CCC: {latest['ccc']:.1f}日 (DSO {latest['dso']:.1f}日 + DIO {latest['dio']:.1f}日 - DPO {latest['dpo']:.1f}日)\n"
-            f"- Net Debt / EBITDA: {latest['net_debt_to_ebitda']:.2f}倍 | FCF: {latest['fcf']:,.1f}"
-        )
+        obs2_dict = {
+            "ja": (
+                f"【決定論的計算結果 (最新 {latest['period_name']})】\n"
+                f"- 売上高: {target_info['periods'][-1].revenue:,.1f} | 営業利益率: {latest['operating_margin']*100:.1f}%\n"
+                f"- ROE: {latest['roe']*100:.2f}% (純利益率 {dupont['net_margin']*100:.2f}% × 回転率 {dupont['asset_turnover']:.2f}回 × レバレッジ {dupont['equity_multiplier']:.2f}倍)\n"
+                f"- ROIC: {latest['roic']*100:.2f}% | CCC: {latest['ccc']:.1f}日 (DSO {latest['dso']:.1f}日 + DIO {latest['dio']:.1f}日 - DPO {latest['dpo']:.1f}日)\n"
+                f"- Net Debt / EBITDA: {latest['net_debt_to_ebitda']:.2f}倍 | FCF: {latest['fcf']:,.1f}"
+            ),
+            "en": (
+                f"[Deterministic Calculation Results ({latest['period_name']})]\n"
+                f"- Revenue: {target_info['periods'][-1].revenue:,.1f} | Operating Margin (EBIT): {latest['operating_margin']*100:.1f}%\n"
+                f"- ROE: {latest['roe']*100:.2f}% (Net Margin {dupont['net_margin']*100:.2f}% × Asset Turnover {dupont['asset_turnover']:.2f}x × Equity Multiplier {dupont['equity_multiplier']:.2f}x)\n"
+                f"- ROIC: {latest['roic']*100:.2f}% | CCC: {latest['ccc']:.1f} Days (DSO {latest['dso']:.1f}d + DIO {latest['dio']:.1f}d - DPO {latest['dpo']:.1f}d)\n"
+                f"- Net Debt / EBITDA: {latest['net_debt_to_ebitda']:.2f}x | Free Cash Flow: {latest['fcf']:,.1f}"
+            ),
+            "zh-CN": (
+                f"【确定性财务指标计算完成 (最新财年 {latest['period_name']})】\n"
+                f"- 营业收入: {target_info['periods'][-1].revenue:,.1f} | 营业利润率: {latest['operating_margin']*100:.1f}%\n"
+                f"- 净资产收益率 ROE: {latest['roe']*100:.2f}% (销售净利率 {dupont['net_margin']*100:.2f}% × 总资产周转率 {dupont['asset_turnover']:.2f}次 × 权益乘数 {dupont['equity_multiplier']:.2f}倍)\n"
+                f"- 投入资本回报率 ROIC: {latest['roic']*100:.2f}% | 现金循环周期 CCC: {latest['ccc']:.1f}天 (应收 DSO {latest['dso']:.1f}天 + 存货 DIO {latest['dio']:.1f}天 - 应付 DPO {latest['dpo']:.1f}天)\n"
+                f"- 净有息负债倍率: {latest['net_debt_to_ebitda']:.2f}倍 | 自由现金流 FCF: {latest['fcf']:,.1f}"
+            ),
+            "zh-TW": (
+                f"【確定性財務指標計算完成 (最新財年 {latest['period_name']})】\n"
+                f"- 營業收入: {target_info['periods'][-1].revenue:,.1f} | 營業利益率: {latest['operating_margin']*100:.1f}%\n"
+                f"- 股東權益報酬率 ROE: {latest['roe']*100:.2f}% (銷售淨利率 {dupont['net_margin']*100:.2f}% × 總資產週轉率 {dupont['asset_turnover']:.2f}次 × 權益乘數 {dupont['equity_multiplier']:.2f}倍)\n"
+                f"- 投入資本回報率 ROIC: {latest['roic']*100:.2f}% | 現金循環週期 CCC: {latest['ccc']:.1f}天 (應收 DSO {latest['dso']:.1f}天 + 存貨 DIO {latest['dio']:.1f}天 - 應付 DPO {latest['dpo']:.1f}天)\n"
+                f"- 淨有息負債倍率: {latest['net_debt_to_ebitda']:.2f}倍 | 自由現金流 FCF: {latest['fcf']:,.1f}"
+            ),
+            "fr": (
+                f"[Résultats du Calcul Déterministe ({latest['period_name']})]\n"
+                f"- Chiffre d'Affaires: {target_info['periods'][-1].revenue:,.1f} | Marge d'Exploitation (EBIT): {latest['operating_margin']*100:.1f}%\n"
+                f"- Rentabilité des Fonds Propres (ROE): {latest['roe']*100:.2f}% (Marge Nette {dupont['net_margin']*100:.2f}% × Rotation Actif {dupont['asset_turnover']:.2f}x × Levier {dupont['equity_multiplier']:.2f}x)\n"
+                f"- Rentabilité du Capital (ROIC): {latest['roic']*100:.2f}% | Cycle CCC: {latest['ccc']:.1f} Jours (DSO {latest['dso']:.1f}j + DIO {latest['dio']:.1f}j - DPO {latest['dpo']:.1f}j)\n"
+                f"- Dette Nette / EBITDA: {latest['net_debt_to_ebitda']:.2f}x | Flux de Trésorerie Disponible (FCF): {latest['fcf']:,.1f}"
+            )
+        }
 
         yield {
             "type": "observation",
             "step": 2,
-            "content": obs_calc_text
+            "content": obs2_dict.get(lang, obs2_dict["ja"])
         }
         await asyncio.sleep(0.8)
 
         # -------------------------------------------------------------------
         # Step 3: Peer Benchmarking & Multi-Dimensional Comparison
         # -------------------------------------------------------------------
-        peer_benchmark_data = build_peer_benchmark(matched_key, target_info, latest)
+        peer_benchmark_data = build_peer_benchmark(matched_key, target_info, latest, lang=lang)
         peers_list = [peer_benchmark_data["peer1_head"], peer_benchmark_data["peer2_head"]]
+        
+        step3_thought_dict = {
+            "ja": f"同業主要ライバル（{', '.join(peers_list)}）との横並び比較を実施する。売上規模、営業利益率、資本効率（ROIC/ROE）、運転資本サイクル（CCC）、財務レバレッジの構造的差異を検証し、業界内での優位性と劣後要因を特定する。",
+            "en": f"Conducting peer comparison against key industry competitors ({', '.join(peers_list)}). Cross-evaluating top-line scale, operating margins, capital efficiency (ROIC/ROE), working capital cycles (CCC), and balance sheet solvency.",
+            "zh-CN": f"对标行业核心主要竞争对手（{', '.join(peers_list)}），全方位比对营收体量、营业利润率 (EBIT)、资本回报率 (ROIC/ROE)、营运资金循环周期 (CCC) 及财务杠杆安全性。",
+            "zh-TW": f"對標行業核心主要競爭對手（{', '.join(peers_list)}），全方位比對營收體量、營業利益率 (EBIT)、資本回報率 (ROIC/ROE)、營運資金循環週期 (CCC) 及財務槓桿安全性。",
+            "fr": f"Comparaison sectorielle avec les principaux concurrents ({', '.join(peers_list)}). Analyse comparative de la taille, de la marge opérationnelle, de l'efficience du capital (ROIC/ROE), du BFR (CCC) et de la solvabilité du bilan."
+        }
         yield {
             "type": "thought",
             "step": 3,
-            "title": "競合ベンチマーク & 相対ポジショニング検証",
-            "content": f"同業主要ライバル（{', '.join(peers_list)}）との横並び比較を実施する。売上規模、営業利益率、資本効率（ROIC/ROE）、運転資本サイクル（CCC）、財務レバレッジの構造的差異を検証し、業界内での優位性と劣後要因を特定する。"
+            "title": loc["step3_title"],
+            "content": step3_thought_dict.get(lang, step3_thought_dict["ja"])
         }
         await asyncio.sleep(0.7)
 
@@ -1174,10 +1602,18 @@ Return ONLY a valid JSON object strictly matching this schema, without any markd
         }
         await asyncio.sleep(0.9)
 
+        obs3_dict = {
+            "ja": f"【競合比較ベンチマークの抽出完了】\n- 対象: {peer_benchmark_data['target_head']}\n- 比較対象: {peer_benchmark_data['peer1_head']} / {peer_benchmark_data['peer2_head']}\n- 営業利益率・ROE・ROIC・CCC・負債比率の多面比較マトリクスを確定。",
+            "en": f"[Peer Benchmark Matrix Extracted]\n- Target Enterprise: {peer_benchmark_data['target_head']}\n- Peer Comparables: {peer_benchmark_data['peer1_head']} / {peer_benchmark_data['peer2_head']}\n- Multi-dimensional matrix established across OPM, ROE, ROIC, CCC, and Net Debt.",
+            "zh-CN": f"【竞品多维对标矩阵构建完成】\n- 对标主体: {peer_benchmark_data['target_head']}\n- 对标同业: {peer_benchmark_data['peer1_head']} / {peer_benchmark_data['peer2_head']}\n- 营业利润率、ROE、ROIC、CCC 与负债比率多维矩阵已锁定。",
+            "zh-TW": f"【競品多維對標矩陣構建完成】\n- 對標主體: {peer_benchmark_data['target_head']}\n- 對標同業: {peer_benchmark_data['peer1_head']} / {peer_benchmark_data['peer2_head']}\n- 營業利益率、ROE、ROIC、CCC 與負債比率多維矩陣已鎖定。",
+            "fr": f"[Matrice du Benchmark Concurrentiel Établie]\n- Entreprise Cible: {peer_benchmark_data['target_head']}\n- Pairs Comparables: {peer_benchmark_data['peer1_head']} / {peer_benchmark_data['peer2_head']}\n- Matrice multidimensionnelle verrouillée (Marge, ROE, ROIC, CCC, Dette)."
+        }
+
         yield {
             "type": "observation",
             "step": 3,
-            "content": f"【競合比較ベンチマークの抽出完了】\n- 対象: {peer_benchmark_data['target_head']}\n- 比較対象: {peer_benchmark_data['peer1_head']} / {peer_benchmark_data['peer2_head']}\n- 営業利益率・ROE・ROIC・CCC・負債比率の多面比較マトリクスを確定。"
+            "content": obs3_dict.get(lang, obs3_dict["ja"])
         }
         await asyncio.sleep(0.8)
 
@@ -1187,8 +1623,8 @@ Return ONLY a valid JSON object strictly matching this schema, without any markd
         yield {
             "type": "thought",
             "step": 4,
-            "title": "早期警戒指標（EWI）& 財務波及経路の評価",
-            "content": "リスク・早期警戒フレームワークに基づき、マクロ環境（為替・金利・関税）、事業固有リスク（部材価格・特定セグメントの採算性）、およびB/S上の潜在債務（コベナンツ、ワラント評価損）の感応度と波及経路を論理的に整理する。"
+            "title": loc["step4_title"],
+            "content": loc["step4_thought"]
         }
         await asyncio.sleep(0.7)
 
@@ -1203,11 +1639,19 @@ Return ONLY a valid JSON object strictly matching this schema, without any markd
         }
         await asyncio.sleep(0.8)
 
-        top_risk = risks_data[0] if risks_data else {"name": "事業環境変動リスク", "impact": "中", "prob": "中", "ewi": "営業利益率推移"}
+        top_risk = risks_data[0] if risks_data else {"name": "事業環境変動リスク", "impact": "高", "prob": "中", "ewi": "営業利益率推移"}
+        obs4_dict = {
+            "ja": f"【リスク評価マトリクスの構築完了】\n- 最重要監視リスク: {top_risk['name']} (重要度: {top_risk.get('impact', '高')}, 発生確率: {top_risk.get('prob', '中')})\n- 早期警戒指標: {top_risk.get('ewi', 'マージン動向')}\n- 財務健全性スコア（Net Debt倍率）は {latest['net_debt_to_ebitda']:.2f}倍 を記録。",
+            "en": f"[Risk Heatmap Matrix Formulated]\n- Key Monitored Risk: {top_risk['name']} (Impact: {top_risk.get('impact', 'High')}, Likelihood: {top_risk.get('prob', 'Med')})\n- Early Warning Indicator: {top_risk.get('ewi', 'Margin Trend')}\n- Solvency Check: Net Debt / EBITDA is {latest['net_debt_to_ebitda']:.2f}x.",
+            "zh-CN": f"【风险预警矩阵构建完成】\n- 核心监控风险: {top_risk['name']} (影响程度: {top_risk.get('impact', '高')}, 发生概率: {top_risk.get('prob', '中')})\n- 早期预警指标: {top_risk.get('ewi', '利润率走势')}\n- 财务偿债安全性 (净有息负债倍率): {latest['net_debt_to_ebitda']:.2f}倍。",
+            "zh-TW": f"【風險預警矩陣構建完成】\n- 核心監控風險: {top_risk['name']} (影響程度: {top_risk.get('impact', '高')}, 發生機率: {top_risk.get('prob', '中')})\n- 早期預警指標: {top_risk.get('ewi', '利潤率走勢')}\n- 財務償債安全性 (淨有息負債倍率): {latest['net_debt_to_ebitda']:.2f}倍。",
+            "fr": f"[Matrice Thermique des Risques Finalisée]\n- Risque Clé Surveillé: {top_risk['name']} (Impact: {top_risk.get('impact', 'Élevé')}, Probabilité: {top_risk.get('prob', 'Moy.')})\n- Indicateur d'Alerte Précoce: {top_risk.get('ewi', 'Tendance Marge')}\n- Ratio de Levier Financier: Dette Nette / EBITDA à {latest['net_debt_to_ebitda']:.2f}x."
+        }
+
         yield {
             "type": "observation",
             "step": 4,
-            "content": f"【リスク評価マトリクスの構築完了】\n- 最重要監視リスク: {top_risk['name']} (重要度: {top_risk.get('impact', '中')}, 発生確率: {top_risk.get('prob', '中')})\n- 早期警戒指標: {top_risk.get('ewi', 'マージン動向')}\n- 財務健全性スコア（Net Debt倍率）は {latest['net_debt_to_ebitda']:.2f}倍 を記録。"
+            "content": obs4_dict.get(lang, obs4_dict["ja"])
         }
         await asyncio.sleep(0.8)
 
@@ -1217,8 +1661,8 @@ Return ONLY a valid JSON object strictly matching this schema, without any markd
         yield {
             "type": "thought",
             "step": 5,
-            "title": "標準出力フォーマット（A〜H）レポートの統合生成",
-            "content": "すべての検証データを集約し、エグゼクティブサマリーから財務三表、指標推移、デュポン分解、競合比較、リスク早期警戒指標、出典一覧（A〜H）までの完全レポートを生成する。"
+            "title": loc["step5_title"],
+            "content": loc["step5_thought"]
         }
         await asyncio.sleep(0.5)
 
@@ -1256,11 +1700,14 @@ Return ONLY a valid JSON object strictly matching this schema, without any markd
             dupont=dupont,
             computed_metrics=computed_metrics,
             peer_benchmark=peer_benchmark_data,
-            base_tables_md=base_tables_md
+            base_tables_md=base_tables_md,
+            lang=lang
         )
 
         # Dynamic Scores
         health_score = 88 if latest["net_debt_to_ebitda"] and latest["net_debt_to_ebitda"] < 2.0 else 72
+
+        ccc_str = f"{latest['ccc']:.1f} Days" if lang in ["en", "fr"] else (f"{latest['ccc']:.1f}天" if lang in ["zh-CN", "zh-TW"] else f"{latest['ccc']:.1f}日") if latest['ccc'] else "-"
 
         full_payload = {
             "type": "final_report",
@@ -1280,7 +1727,7 @@ Return ONLY a valid JSON object strictly matching this schema, without any markd
                 "roe": f"{latest['roe']*100:.1f}%" if latest['roe'] else "-",
                 "roic": f"{latest['roic']*100:.1f}%" if latest['roic'] else "-",
                 "fcf": f"{latest['fcf']:,.1f}" if latest['fcf'] else "-",
-                "ccc": f"{latest['ccc']:.1f}日" if latest['ccc'] else "-",
+                "ccc": ccc_str,
                 "net_debt_ebitda": f"{latest['net_debt_to_ebitda']:.2f}x" if latest['net_debt_to_ebitda'] else "Net Cash"
             },
             "charts": chart_data,

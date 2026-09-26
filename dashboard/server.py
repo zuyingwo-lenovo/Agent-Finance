@@ -101,6 +101,7 @@ async def analyze_stream_handler(request):
     company = request.query_params.get("company", "Lenovo")
     session_token = request.query_params.get("session_token", None)
     model = request.query_params.get("model", "gemini-2.5-flash")
+    lang = request.query_params.get("lang", "ja")
     
     # Resolve API Key securely:
     # 1. Ephemeral in-memory session token (from client UI)
@@ -115,7 +116,7 @@ async def analyze_stream_handler(request):
 
     async def event_generator():
         try:
-            async for event in agent.execute_react_stream(company):
+            async for event in agent.execute_react_stream(company, lang=lang):
                 yield {
                     "event": "message",
                     "data": json.dumps(event, ensure_ascii=False)

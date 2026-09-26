@@ -5,6 +5,7 @@
 
 let trajectoryChart = null;
 let cashFlowChart = null;
+let lastChartData = null;
 
 // Chart.js Global Dark Theme Defaults
 if (typeof Chart !== 'undefined') {
@@ -22,6 +23,7 @@ if (typeof Chart !== 'undefined') {
 
 function initOrUpdateCharts(chartData) {
   if (!chartData || !chartData.labels) return;
+  lastChartData = chartData;
 
   const labels = chartData.labels;
 
@@ -34,6 +36,10 @@ function initOrUpdateCharts(chartData) {
       trajectoryChart.destroy();
     }
 
+    const opLabel = (typeof t === 'function') ? t('chartDatasetOperatingProfit') : '営業利益 (Operating Profit)';
+    const npLabel = (typeof t === 'function') ? t('chartDatasetNetProfit') : '当期純利益 (Net Profit)';
+    const revLabel = (typeof t === 'function') ? t('chartDatasetRevenue') : '売上高 (Revenue)';
+
     trajectoryChart = new Chart(ctxTraj, {
       type: 'bar',
       data: {
@@ -41,7 +47,7 @@ function initOrUpdateCharts(chartData) {
         datasets: [
           {
             type: 'line',
-            label: '営業利益 (Operating Profit)',
+            label: opLabel,
             data: chartData.operating_profit,
             borderColor: '#00f2fe',
             backgroundColor: 'rgba(0, 242, 254, 0.15)',
@@ -53,7 +59,7 @@ function initOrUpdateCharts(chartData) {
           },
           {
             type: 'line',
-            label: '当期純利益 (Net Profit)',
+            label: npLabel,
             data: chartData.net_profit,
             borderColor: '#a855f7',
             backgroundColor: 'rgba(168, 85, 247, 0.1)',
@@ -66,7 +72,7 @@ function initOrUpdateCharts(chartData) {
           },
           {
             type: 'bar',
-            label: '売上高 (Revenue)',
+            label: revLabel,
             data: chartData.revenue,
             backgroundColor: 'rgba(79, 172, 254, 0.35)',
             borderColor: 'rgba(79, 172, 254, 0.8)',
@@ -127,6 +133,9 @@ function initOrUpdateCharts(chartData) {
       cashFlowChart.destroy();
     }
 
+    const fcfLabel = (typeof t === 'function') ? t('chartDatasetFCF') : 'フリーCF (FCF)';
+    const ocfLabel = (typeof t === 'function') ? t('chartDatasetOperatingCF') : '営業CF (OCF)';
+
     cashFlowChart = new Chart(ctxCF, {
       type: 'bar',
       data: {
@@ -134,7 +143,7 @@ function initOrUpdateCharts(chartData) {
         datasets: [
           {
             type: 'line',
-            label: 'フリーCF (FCF)',
+            label: fcfLabel,
             data: chartData.fcf,
             borderColor: '#10b981',
             backgroundColor: 'rgba(16, 185, 129, 0.2)',
@@ -145,7 +154,7 @@ function initOrUpdateCharts(chartData) {
           },
           {
             type: 'bar',
-            label: '営業CF (OCF)',
+            label: ocfLabel,
             data: chartData.operating_cf,
             backgroundColor: 'rgba(16, 185, 129, 0.45)',
             borderRadius: 4
@@ -180,4 +189,13 @@ function initOrUpdateCharts(chartData) {
       }
     });
   }
+}
+
+// Re-render charts when language changes
+if (typeof window !== 'undefined') {
+  window.addEventListener('languageChanged', () => {
+    if (lastChartData) {
+      initOrUpdateCharts(lastChartData);
+    }
+  });
 }

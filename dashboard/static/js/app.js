@@ -65,6 +65,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const customModelField = document.getElementById('customModelField');
   const customModelInput = document.getElementById('customModelInput');
 
+  // Multilingual Selector Elements
+  const langSelectorWrapper = document.getElementById('langSelectorWrapper');
+  const langSelectBtn = document.getElementById('langSelectBtn');
+  const langDropdownMenu = document.getElementById('langDropdownMenu');
+  const langOptionBtns = document.querySelectorAll('.lang-option-btn');
+
   // Active Session & Research State
   let activeEventSource = null;
   let currentReportMarkdown = '';
@@ -108,6 +114,45 @@ document.addEventListener('DOMContentLoaded', () => {
       if (apiKeyModal) apiKeyModal.classList.add('active');
     });
   }
+
+  // -------------------------------------------------------------------------
+  // Multilingual Selector Handling
+  // -------------------------------------------------------------------------
+  if (langSelectBtn && langSelectorWrapper) {
+    langSelectBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      langSelectorWrapper.classList.toggle('active');
+    });
+
+    langOptionBtns.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const selectedLang = btn.dataset.lang;
+        if (selectedLang && typeof applyLanguage === 'function') {
+          applyLanguage(selectedLang);
+        }
+        langSelectorWrapper.classList.remove('active');
+      });
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!langSelectorWrapper.contains(e.target)) {
+        langSelectorWrapper.classList.remove('active');
+      }
+    });
+  }
+
+  // Initialize Language on DOM Load
+  if (typeof applyLanguage === 'function' && typeof getCurrentLanguage === 'function') {
+    applyLanguage(getCurrentLanguage());
+  }
+
+  // Listen to Language Changes for Dynamic Content Re-render
+  window.addEventListener('languageChanged', () => {
+    if (currentAnalysisData) {
+      renderFinalDashboard(currentAnalysisData);
+    }
+  });
 
   // -------------------------------------------------------------------------
   // Preset Selection
@@ -232,6 +277,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     let streamUrl = `/api/analyze/stream?company=${encodeURIComponent(companyName)}&model=${encodeURIComponent(activeModel)}`;
+    const curLang = (typeof getCurrentLanguage === 'function') ? getCurrentLanguage() : 'ja';
+    streamUrl += `&lang=${encodeURIComponent(curLang)}`;
     if (activeSessionToken) {
       // Pass only the random UUID session token, NEVER the raw API key
       streamUrl += `&session_token=${encodeURIComponent(activeSessionToken)}`;
@@ -258,12 +305,12 @@ document.addEventListener('DOMContentLoaded', () => {
   function setAgentState(isRunning) {
     if (isRunning) {
       agentStatusBadge.classList.add('running');
-      statusText.textContent = 'REASONING & ACTING...';
+      statusText.textContent = (typeof t === 'function') ? t('agentReasoning') : 'REASONING & ACTING...';
       runAnalysisBtn.disabled = true;
       runAnalysisBtn.style.opacity = '0.7';
     } else {
       agentStatusBadge.classList.remove('running');
-      statusText.textContent = 'AGENT COMPLETED';
+      statusText.textContent = (typeof t === 'function') ? t('agentCompleted') : 'AGENT COMPLETED';
       runAnalysisBtn.disabled = false;
       runAnalysisBtn.style.opacity = '1';
     }
@@ -361,10 +408,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const callout = document.getElementById('dupontDriverCallout');
       if (callout) {
+        const lang = (typeof getCurrentLanguage === 'function') ? getCurrentLanguage() : 'ja';
         if (d.equity_multiplier >= 3.0) {
-          callout.textContent = `★ 主要ドライバー (レバレッジ ${d.equity_multiplier}倍)`;
+          const driverLabels = {
+            ja: `★ 主要ドライバー (レバレッジ ${d.equity_multiplier}倍)`,
+            en: `★ Primary Driver (Financial Leverage ${d.equity_multiplier}x)`,
+            'zh-CN': `★ 核心驱动因素 (权益乘数 ${d.equity_multiplier}倍)`,
+            'zh-TW': `★ 核心驅動因素 (權益乘數 ${d.equity_multiplier}倍)`,
+            fr: `★ Moteur Principal (Levier Financier ${d.equity_multiplier}x)`
+          };
+          callout.textContent = driverLabels[lang] || driverLabels.ja;
         } else {
-          callout.textContent = `★ 収益性ドライバー (純利益率 ${d.net_margin}%)`;
+          const marginLabels = {
+            ja: `★ 収益性ドライバー (純利益率 ${d.net_margin}%)`,
+            en: `★ Profitability Driver (Net Margin ${d.net_margin}%)`,
+            'zh-CN': `★ 利润率驱动因素 (净利率 ${d.net_margin}%)`,
+            'zh-TW': `★ 利潤率驅動因素 (淨利率 ${d.net_margin}%)`,
+            fr: `★ Moteur de Marge (Marge Nette ${d.net_margin}%)`
+          };
+          callout.textContent = marginLabels[lang] || marginLabels.ja;
         }
       }
     }
@@ -372,10 +434,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // 4. CCC Visualizer & Waterfall Timeline
     if (data.charts && data.charts.ccc_latest) {
       const c = data.charts.ccc_latest;
-      document.getElementById('cccDso').textContent = `+${c.dso} Days`;
-      document.getElementById('cccDio').textContent = `+${c.dio} Days`;
-      document.getElementById('cccDpo').textContent = `−${c.dpo} Days`;
-      document.getElementById('cccResult').textContent = `${c.ccc} Days`;
+      const lang = (typeof getCurrentLanguage === 'function') ? getCurrentLanguage() : 'ja';
+      const daySuffix = (lang in { en: 1, fr: 1 }) ? ' Days' : (lang in { 'zh-CN': 1, 'zh-TW': 1 } ? ' 天' : ' 日');
+
+      document.getElementById('cccDso').textContent = `+${c.dso}${daySuffix}`;
+      document.getElementById('cccDio').textContent = `+${c.dio}${daySuffix}`;
+      document.getElementById('cccDpo').textContent = `−${c.dpo}${daySuffix}`;
+      document.getElementById('cccResult').textContent = `${c.ccc}${daySuffix}`;
 
       // Update Visual Waterfall Timeline Bar
       const barDso = document.getElementById('barDso');
@@ -392,9 +457,32 @@ document.addEventListener('DOMContentLoaded', () => {
         barDso.style.width = `${pDso}%`;
         barDio.style.width = `${pDio}%`;
         barDpo.style.width = `${pDpo}%`;
-        barDso.innerHTML = `<span class="seg-text">売掛 DSO +${c.dso}日</span>`;
-        barDio.innerHTML = `<span class="seg-text">在庫 DIO +${c.dio}日</span>`;
-        barDpo.innerHTML = `<span class="seg-text">買掛 DPO -${c.dpo}日 (支払猶予)</span>`;
+
+        const dsoTexts = {
+          ja: `売掛 DSO +${c.dso}日`,
+          en: `DSO +${c.dso} Days`,
+          'zh-CN': `应收账款 DSO +${c.dso}天`,
+          'zh-TW': `應收帳款 DSO +${c.dso}天`,
+          fr: `Délai Clients DSO +${c.dso}j`
+        };
+        const dioTexts = {
+          ja: `在庫 DIO +${c.dio}日`,
+          en: `DIO +${c.dio} Days`,
+          'zh-CN': `存货周转 DIO +${c.dio}天`,
+          'zh-TW': `存貨週轉 DIO +${c.dio}天`,
+          fr: `Délai Stocks DIO +${c.dio}j`
+        };
+        const dpoTexts = {
+          ja: `買掛 DPO -${c.dpo}日 (支払猶予)`,
+          en: `DPO -${c.dpo} Days (Supplier Credit)`,
+          'zh-CN': `应付账款 DPO -${c.dpo}天 (无息占款)`,
+          'zh-TW': `應付帳款 DPO -${c.dpo}天 (供應商賒帳)`,
+          fr: `Délai Fournisseurs DPO -${c.dpo}j (Financement)`
+        };
+
+        barDso.innerHTML = `<span class="seg-text">${dsoTexts[lang] || dsoTexts.ja}</span>`;
+        barDio.innerHTML = `<span class="seg-text">${dioTexts[lang] || dioTexts.ja}</span>`;
+        barDpo.innerHTML = `<span class="seg-text">${dpoTexts[lang] || dpoTexts.ja}</span>`;
       }
     }
 
@@ -449,21 +537,39 @@ document.addEventListener('DOMContentLoaded', () => {
           let peer1ValHtml = r.peer1_val;
           let peer2ValHtml = r.peer2_val;
 
-          // Add visual tags
-          if (r.category.includes('PC') || r.category.includes('シェア') || r.category.includes('戦略')) {
-            if (r.target_val.includes('首位') || r.target_val.includes('24%')) {
-              targetValHtml = `<span class="bm-badge leader">世界首位 (24%) 👑</span> / $58.9B`;
+          // Add visual tags across languages
+          const cat = (r.category || '').toLowerCase();
+          const targetV = (r.target_val || '');
+          const lang = (typeof getCurrentLanguage === 'function') ? getCurrentLanguage() : 'ja';
+
+          if (cat.includes('pc') || cat.includes('シェア') || cat.includes('share') || cat.includes('市场') || cat.includes('市場') || cat.includes('part de')) {
+            if (targetV.includes('首位') || targetV.includes('24%') || targetV.includes('Leader') || targetV.includes('#1')) {
+              const leaderText = {
+                ja: '世界首位 (24%) 👑',
+                en: 'Global #1 (24%) 👑',
+                'zh-CN': '全球榜首 (24%) 👑',
+                'zh-TW': '全球榜首 (24%) 👑',
+                fr: 'N°1 Mondial (24%) 👑'
+              }[lang] || '世界首位 (24%) 👑';
+              targetValHtml = `<span class="bm-badge leader">${leaderText}</span> / $58.9B`;
             }
-            if (hShare) hShare.textContent = `${r.target_val} (世界首位)`;
-          } else if (r.category.includes('営業利益率') || r.category.includes('OPM')) {
+            if (hShare) hShare.textContent = `${r.target_val}`;
+          } else if (cat.includes('営業利益率') || cat.includes('opm') || cat.includes('ebit') || cat.includes('margin') || cat.includes('marge') || cat.includes('利润率') || cat.includes('利益率')) {
             targetValHtml = `<span class="bm-badge caution">${r.target_val} ⚠️</span>`;
             peer1ValHtml = `<span class="bm-badge leader">${r.peer1_val} 🥇</span>`;
             if (hOpm) hOpm.textContent = `${r.target_val} vs ${r.peer1_val}`;
-          } else if (r.category.includes('Net Debt') || r.category.includes('有利子負債')) {
-            targetValHtml = `<span class="bm-badge safe">${r.target_val} 🟢 最健全</span>`;
-            if (hDebt) hDebt.textContent = `${r.target_val} (最も健全)`;
-          } else if (r.category.includes('CCC') || r.category.includes('現金循環')) {
-            if (hCcc) hCcc.textContent = `${r.target_val} (高回転)`;
+          } else if (cat.includes('net debt') || cat.includes('有利子負債') || cat.includes('dette') || cat.includes('有息负债') || cat.includes('有息負債')) {
+            const safeText = {
+              ja: '最健全 🟢',
+              en: 'Safest 🟢',
+              'zh-CN': '最为稳健 🟢',
+              'zh-TW': '最為穩健 🟢',
+              fr: 'Plus Solide 🟢'
+            }[lang] || '最健全 🟢';
+            targetValHtml = `<span class="bm-badge safe">${r.target_val} ${safeText}</span>`;
+            if (hDebt) hDebt.textContent = `${r.target_val}`;
+          } else if (cat.includes('ccc') || cat.includes('現金循環') || cat.includes('现金周转') || cat.includes('現金週轉') || cat.includes('conversion')) {
+            if (hCcc) hCcc.textContent = `${r.target_val}`;
           }
 
           tr.innerHTML = `
@@ -493,10 +599,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (risksTableBody) {
         risksTableBody.innerHTML = '';
+        const lang = (typeof getCurrentLanguage === 'function') ? getCurrentLanguage() : 'ja';
+        const verifiedText = {
+          ja: '✅ 検証完了',
+          en: '✅ Verified',
+          'zh-CN': '✅ 已复核',
+          'zh-TW': '✅ 已覆核',
+          fr: '✅ Vérifié'
+        }[lang] || '✅ 検証完了';
+        const pendingText = {
+          ja: '🔍 要確認',
+          en: '🔍 Audit Required',
+          'zh-CN': '🔍 待核查',
+          'zh-TW': '🔍 待查實',
+          fr: '🔍 À Auditer'
+        }[lang] || '🔍 要確認';
+
         data.risks.forEach((r, idx) => {
-          const isHigh = r.impact === '高';
-          const isRealized = r.prob === '顕在化';
-          const isProbHigh = r.prob === '高';
+          const isHigh = r.impact === '高' || r.impact === 'High' || r.impact === 'Élevé';
+          const isRealized = r.prob === '顕在化' || r.prob === 'Realized' || r.prob === 'Actif';
+          const isProbHigh = r.prob === '高' || r.prob === 'High' || r.prob === 'Élevée';
 
           // Quadrant allocation
           const pin = document.createElement('div');
@@ -516,15 +638,34 @@ document.addEventListener('DOMContentLoaded', () => {
             if (qModerate) qModerate.appendChild(pin);
           }
 
+          let impactBadgeText = '🟡 中 (Moderate)';
+          if (isHigh) {
+            impactBadgeText = {
+              ja: '🔴 高 (Critical)',
+              en: '🔴 High (Critical)',
+              'zh-CN': '🔴 高 (严重影响)',
+              'zh-TW': '🔴 高 (嚴重影響)',
+              fr: '🔴 Élevé (Critique)'
+            }[lang] || '🔴 高 (Critical)';
+          } else {
+            impactBadgeText = {
+              ja: '🟡 中 (Moderate)',
+              en: '🟡 Med (Moderate)',
+              'zh-CN': '🟡 中 (适度影响)',
+              'zh-TW': '🟡 中 (適度影響)',
+              fr: '🟡 Moy. (Modéré)'
+            }[lang] || '🟡 中 (Moderate)';
+          }
+
           // Table Row
           const row = document.createElement('tr');
           row.innerHTML = `
             <td><strong>${r.name}</strong></td>
-            <td><span class="bm-badge ${isHigh ? 'caution' : 'leader'}">${r.impact === '高' ? '🔴 高 (Critical)' : '🟡 中 (Moderate)'}</span></td>
+            <td><span class="bm-badge ${isHigh ? 'caution' : 'leader'}">${impactBadgeText}</span></td>
             <td><span class="bm-badge ${isProbHigh ? 'caution' : isRealized ? 'safe' : 'leader'}">${r.prob}</span></td>
             <td><code>${r.ewi}</code></td>
             <td>${r.doc}</td>
-            <td><button type="button" class="btn-risk-status" onclick="this.classList.toggle('pending'); this.textContent = this.classList.contains('pending') ? '🔍 要確認' : '✅ 検証完了';">✅ 検証完了</button></td>
+            <td><button type="button" class="btn-risk-status" data-v="${verifiedText}" data-p="${pendingText}" onclick="this.classList.toggle('pending'); this.textContent = this.classList.contains('pending') ? this.getAttribute('data-p') : this.getAttribute('data-v');">${verifiedText}</button></td>
           `;
           risksTableBody.appendChild(row);
         });
