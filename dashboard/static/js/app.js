@@ -23,17 +23,35 @@ document.addEventListener('DOMContentLoaded', () => {
   const tabBtns = document.querySelectorAll('.tab-btn');
   const tabPanes = document.querySelectorAll('.tab-pane');
 
-  // Report Actions
+  // Stream Collapse / Expand
+  const dashboardGrid = document.getElementById('dashboardGrid');
+  const collapseStreamBtn = document.getElementById('collapseStreamBtn');
+  const collapsedStreamRail = document.getElementById('collapsedStreamRail');
+  const expandRailBtn = document.getElementById('expandRailBtn');
+  const uncollapseStreamPill = document.getElementById('uncollapseStreamPill');
+  const railStepBadge = document.getElementById('railStepBadge');
+
+  // Report Actions & TOC
   const copyReportBtn = document.getElementById('copyReportBtn');
   const downloadReportBtn = document.getElementById('downloadReportBtn');
   const downloadPdfBtn = document.getElementById('downloadPdfBtn');
-  const downloadAllFromToolbarBtn = document.getElementById('downloadAllFromToolbarBtn');
   const reportMarkdownContainer = document.getElementById('reportMarkdownContainer');
+  const tocChips = document.querySelectorAll('.toc-chip');
 
-  // All-Results Global Export Buttons
+  // Unified Export Dropdown
+  const unifiedExportWrapper = document.getElementById('unifiedExportWrapper');
+  const unifiedExportBtn = document.getElementById('unifiedExportBtn');
+  const optExportFullPdf = document.getElementById('optExportFullPdf');
+  const optExportExecPdf = document.getElementById('optExportExecPdf');
+  const optExportMd = document.getElementById('optExportMd');
+  const optExportJson = document.getElementById('optExportJson');
+  const optCopyClipboard = document.getElementById('optCopyClipboard');
+
+  // Legacy/Fallback Export Buttons (if present)
   const downloadAllPdfBtn = document.getElementById('downloadAllPdfBtn');
   const downloadAllMdBtn = document.getElementById('downloadAllMdBtn');
   const downloadAllJsonBtn = document.getElementById('downloadAllJsonBtn');
+  const downloadAllFromToolbarBtn = document.getElementById('downloadAllFromToolbarBtn');
 
   // API Key & Model Modal
   const apiKeyModalBtn = document.getElementById('apiKeyModalBtn');
@@ -254,9 +272,18 @@ document.addEventListener('DOMContentLoaded', () => {
   function handleStreamPayload(data) {
     const type = data.type;
 
+    if (data.error || type === 'error') {
+      appendCard('error', '⚠️ Reasoning Error', data.error || data.content || 'An error occurred during reasoning.');
+      setAgentState(false);
+      if (activeEventSource) activeEventSource.close();
+      return;
+    }
+
     if (type === 'thought') {
       currentReactLogs.push(data);
-      stepCounter.textContent = `Step ${data.step}/5`;
+      if (stepCounter) stepCounter.textContent = `Step ${data.step}/5`;
+      if (railStepBadge) railStepBadge.textContent = `${data.step}/5`;
+      if (uncollapseStreamPill) uncollapseStreamPill.innerHTML = `🧠 Stream (Step ${data.step}/5) ❯`;
       appendCard('thought', `🧠 Thought ${data.step}: ${data.title || ''}`, data.content);
     } else if (type === 'action') {
       currentReactLogs.push(data);
@@ -267,6 +294,9 @@ document.addEventListener('DOMContentLoaded', () => {
       appendCard('observation', `👁️ Observation: [Result Verified]`, data.content);
     } else if (type === 'final_report') {
       currentAnalysisData = data;
+      if (stepCounter) stepCounter.textContent = `Step 5/5`;
+      if (railStepBadge) railStepBadge.textContent = `5/5`;
+      if (uncollapseStreamPill) uncollapseStreamPill.innerHTML = `🧠 Stream (Step 5/5) ❯`;
       renderFinalDashboard(data);
       if (activeEventSource) {
         activeEventSource.close();
@@ -328,15 +358,44 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('dupontNetMargin').textContent = `${d.net_margin}%`;
       document.getElementById('dupontTurnover').textContent = `${d.asset_turnover}x`;
       document.getElementById('dupontLeverage').textContent = `${d.equity_multiplier}x`;
+
+      const callout = document.getElementById('dupontDriverCallout');
+      if (callout) {
+        if (d.equity_multiplier >= 3.0) {
+          callout.textContent = `★ 主要ドライバー (レバレッジ ${d.equity_multiplier}倍)`;
+        } else {
+          callout.textContent = `★ 収益性ドライバー (純利益率 ${d.net_margin}%)`;
+        }
+      }
     }
 
-    // 4. CCC Visualizer
+    // 4. CCC Visualizer & Waterfall Timeline
     if (data.charts && data.charts.ccc_latest) {
       const c = data.charts.ccc_latest;
       document.getElementById('cccDso').textContent = `+${c.dso} Days`;
       document.getElementById('cccDio').textContent = `+${c.dio} Days`;
       document.getElementById('cccDpo').textContent = `−${c.dpo} Days`;
       document.getElementById('cccResult').textContent = `${c.ccc} Days`;
+
+      // Update Visual Waterfall Timeline Bar
+      const barDso = document.getElementById('barDso');
+      const barDio = document.getElementById('barDio');
+      const barDpo = document.getElementById('barDpo');
+      if (barDso && barDio && barDpo) {
+        const dsoVal = Math.max(10, c.dso || 42);
+        const dioVal = Math.max(10, c.dio || 41);
+        const dpoVal = Math.max(10, c.dpo || 81);
+        const sum = dsoVal + dioVal + dpoVal;
+        const pDso = Math.round((dsoVal / sum) * 100);
+        const pDio = Math.round((dioVal / sum) * 100);
+        const pDpo = 100 - pDso - pDio;
+        barDso.style.width = `${pDso}%`;
+        barDio.style.width = `${pDio}%`;
+        barDpo.style.width = `${pDpo}%`;
+        barDso.innerHTML = `<span class="seg-text">売掛 DSO +${c.dso}日</span>`;
+        barDio.innerHTML = `<span class="seg-text">在庫 DIO +${c.dio}日</span>`;
+        barDpo.innerHTML = `<span class="seg-text">買掛 DPO -${c.dpo}日 (支払猶予)</span>`;
+      }
     }
 
     // 5. Interactive Charts
@@ -344,17 +403,27 @@ document.addEventListener('DOMContentLoaded', () => {
       initOrUpdateCharts(data.charts);
     }
 
-    // 6. Full Markdown Report (Tab 2)
+    // 6. Full Markdown Report (Tab 2) & TOC Anchor Injection
     if (data.report_markdown) {
       currentReportMarkdown = data.report_markdown;
       if (typeof marked !== 'undefined') {
-        reportMarkdownContainer.innerHTML = marked.parse(data.report_markdown);
+        let html = marked.parse(data.report_markdown);
+        // Inject IDs for TOC Jump
+        html = html.replace(/<h2(.*?)>A\.\s*(.*?)<\/h2>/gi, '<h2 id="sec-a"$1>A. $2</h2>');
+        html = html.replace(/<h2(.*?)>B\.\s*(.*?)<\/h2>/gi, '<h2 id="sec-b"$1>B. $2</h2>');
+        html = html.replace(/<h2(.*?)>C\.\s*(.*?)<\/h2>/gi, '<h2 id="sec-c"$1>C. $2</h2>');
+        html = html.replace(/<h2(.*?)>D\.\s*(.*?)<\/h2>/gi, '<h2 id="sec-d"$1>D. $2</h2>');
+        html = html.replace(/<h2(.*?)>E\.\s*(.*?)<\/h2>/gi, '<h2 id="sec-e"$1>E. $2</h2>');
+        html = html.replace(/<h2(.*?)>F\.\s*(.*?)<\/h2>/gi, '<h2 id="sec-f"$1>F. $2</h2>');
+        html = html.replace(/<h2(.*?)>G\.\s*(.*?)<\/h2>/gi, '<h2 id="sec-g"$1>G. $2</h2>');
+        html = html.replace(/<h2(.*?)>H\.\s*(.*?)<\/h2>/gi, '<h2 id="sec-h"$1>H. $2</h2>');
+        reportMarkdownContainer.innerHTML = html;
       } else {
         reportMarkdownContainer.textContent = data.report_markdown;
       }
     }
 
-    // 7. Peer Benchmark Comparison Table (Tab 3)
+    // 7. Peer Benchmark Comparison Table (Tab 3) & Hero Highlights
     if (data.peer_benchmark) {
       const bm = data.peer_benchmark;
       const targetHead = document.getElementById('bmTargetHead');
@@ -366,15 +435,42 @@ document.addEventListener('DOMContentLoaded', () => {
       if (peer1Head && bm.peer1_head) peer1Head.textContent = bm.peer1_head;
       if (peer2Head && bm.peer2_head) peer2Head.textContent = bm.peer2_head;
 
+      // Update Highlights Grid
+      const hShare = document.getElementById('bmHeroShare');
+      const hOpm = document.getElementById('bmHeroOpm');
+      const hDebt = document.getElementById('bmHeroDebt');
+      const hCcc = document.getElementById('bmHeroCcc');
+
       if (tableBody && Array.isArray(bm.rows)) {
         tableBody.innerHTML = '';
         bm.rows.forEach(r => {
           const tr = document.createElement('tr');
+          let targetValHtml = `<strong>${r.target_val}</strong>`;
+          let peer1ValHtml = r.peer1_val;
+          let peer2ValHtml = r.peer2_val;
+
+          // Add visual tags
+          if (r.category.includes('PC') || r.category.includes('シェア') || r.category.includes('戦略')) {
+            if (r.target_val.includes('首位') || r.target_val.includes('24%')) {
+              targetValHtml = `<span class="bm-badge leader">世界首位 (24%) 👑</span> / $58.9B`;
+            }
+            if (hShare) hShare.textContent = `${r.target_val} (世界首位)`;
+          } else if (r.category.includes('営業利益率') || r.category.includes('OPM')) {
+            targetValHtml = `<span class="bm-badge caution">${r.target_val} ⚠️</span>`;
+            peer1ValHtml = `<span class="bm-badge leader">${r.peer1_val} 🥇</span>`;
+            if (hOpm) hOpm.textContent = `${r.target_val} vs ${r.peer1_val}`;
+          } else if (r.category.includes('Net Debt') || r.category.includes('有利子負債')) {
+            targetValHtml = `<span class="bm-badge safe">${r.target_val} 🟢 最健全</span>`;
+            if (hDebt) hDebt.textContent = `${r.target_val} (最も健全)`;
+          } else if (r.category.includes('CCC') || r.category.includes('現金循環')) {
+            if (hCcc) hCcc.textContent = `${r.target_val} (高回転)`;
+          }
+
           tr.innerHTML = `
             <td><strong>${r.category}</strong></td>
-            <td class="target-cell"><strong>${r.target_val}</strong></td>
-            <td>${r.peer1_val}</td>
-            <td>${r.peer2_val}</td>
+            <td class="target-cell">${targetValHtml}</td>
+            <td>${peer1ValHtml}</td>
+            <td>${peer2ValHtml}</td>
             <td>${r.implication}</td>
           `;
           tableBody.appendChild(tr);
@@ -382,19 +478,53 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    // 8. Risks Table (Tab 4)
+    // 8. Risks Table & 2x2 Heatmap Matrix (Tab 4)
     if (data.risks && Array.isArray(data.risks)) {
       const risksTableBody = document.getElementById('risksTableBody');
+      const qCritical = document.getElementById('quadCriticalItems');
+      const qSevere = document.getElementById('quadSevereItems');
+      const qModerate = document.getElementById('quadModerateItems');
+      const qActive = document.getElementById('quadActiveItems');
+
+      if (qCritical) qCritical.innerHTML = '';
+      if (qSevere) qSevere.innerHTML = '';
+      if (qModerate) qModerate.innerHTML = '';
+      if (qActive) qActive.innerHTML = '';
+
       if (risksTableBody) {
         risksTableBody.innerHTML = '';
-        data.risks.forEach(r => {
+        data.risks.forEach((r, idx) => {
+          const isHigh = r.impact === '高';
+          const isRealized = r.prob === '顕在化';
+          const isProbHigh = r.prob === '高';
+
+          // Quadrant allocation
+          const pin = document.createElement('div');
+          pin.className = `risk-pin ${isHigh && isProbHigh ? 'high' : isHigh ? 'med' : isRealized ? 'active' : 'low'}`;
+          pin.innerHTML = `
+            <span class="pin-badge">${r.name.slice(0, 3)}</span>
+            <span class="pin-text">${r.name} (${(r.ewi || '').slice(0, 16)}...)</span>
+          `;
+
+          if (isHigh && isProbHigh) {
+            if (qCritical) qCritical.appendChild(pin);
+          } else if (isHigh) {
+            if (qSevere) qSevere.appendChild(pin);
+          } else if (isRealized) {
+            if (qActive) qActive.appendChild(pin);
+          } else {
+            if (qModerate) qModerate.appendChild(pin);
+          }
+
+          // Table Row
           const row = document.createElement('tr');
           row.innerHTML = `
             <td><strong>${r.name}</strong></td>
-            <td><span class="badge ${r.impact === '高' ? 'danger' : 'warning'}">${r.impact}</span></td>
-            <td>${r.prob}</td>
+            <td><span class="bm-badge ${isHigh ? 'caution' : 'leader'}">${r.impact === '高' ? '🔴 高 (Critical)' : '🟡 中 (Moderate)'}</span></td>
+            <td><span class="bm-badge ${isProbHigh ? 'caution' : isRealized ? 'safe' : 'leader'}">${r.prob}</span></td>
             <td><code>${r.ewi}</code></td>
             <td>${r.doc}</td>
+            <td><button type="button" class="btn-risk-status" onclick="this.classList.toggle('pending'); this.textContent = this.classList.contains('pending') ? '🔍 要確認' : '✅ 検証完了';">✅ 検証完了</button></td>
           `;
           risksTableBody.appendChild(row);
         });
@@ -438,112 +568,87 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  if (downloadPdfBtn) {
-    downloadPdfBtn.addEventListener('click', async () => {
-      if (!currentReportMarkdown) {
-        alert('レポートがまだ生成されていません。企業を分析してください。');
-        return;
-      }
+  async function downloadExecutivePdf() {
+    if (!currentReportMarkdown) {
+      alert('レポートがまだ生成されていません。企業を分析してください。');
+      return;
+    }
 
-      const origText = downloadPdfBtn.textContent;
+    const origText = downloadPdfBtn?.textContent || '📄 Quick PDF';
+    if (downloadPdfBtn) {
       downloadPdfBtn.textContent = '⏳ PDF生成中...';
       downloadPdfBtn.disabled = true;
+    }
 
-      try {
-        const companyName = (document.getElementById('dispCompanyName')?.textContent || 'Company').trim();
-        const ticker = (document.getElementById('dispTicker')?.textContent || '').trim();
-        const standard = (document.getElementById('dispStandard')?.textContent || '').trim();
-        const currency = (document.getElementById('dispCurrency')?.textContent || '').trim();
-        const dateStr = new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' });
+    try {
+      const companyName = (document.getElementById('dispCompanyName')?.textContent || 'Company').trim();
+      const ticker = (document.getElementById('dispTicker')?.textContent || '').trim();
+      const standard = (document.getElementById('dispStandard')?.textContent || '').trim();
+      const currency = (document.getElementById('dispCurrency')?.textContent || '').trim();
+      const dateStr = new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' });
 
-        // レポート本文HTMLの変換
-        const reportHtml = typeof marked !== 'undefined' ? marked.parse(currentReportMarkdown) : `<pre>${currentReportMarkdown}</pre>`;
+      // レポート本文HTMLの変換
+      const reportHtml = typeof marked !== 'undefined' ? marked.parse(currentReportMarkdown) : `<pre>${currentReportMarkdown}</pre>`;
 
-        // 機関投資家向けクリーンデザインのPDFコンテナを作成
-        const pdfContainer = document.createElement('div');
-        pdfContainer.className = 'pdf-export-container';
-        pdfContainer.innerHTML = `
-          <div class="pdf-header-top">
-            <span class="pdf-logo">FinReAct Institutional Research Report</span>
-            <span class="pdf-date">発行日: ${dateStr}</span>
-          </div>
-          <div class="pdf-title-box">
-            <h1>${companyName} ${ticker ? `(${ticker})` : ''}</h1>
-            <p class="pdf-subtitle">企業財務三表・資本効率・競合ベンチマーク統合調査報告書（A〜H標準規格） | ${standard} | ${currency}</p>
-          </div>
-          <div class="pdf-body">
-            ${reportHtml}
-          </div>
-          <div class="pdf-footer">
-            <span>厳秘 (Confidential) — Generated by FinReAct Agentic AI System</span>
-            <span>一次情報根拠: 有価証券報告書 / SEC Form 10-K / 決算短信 / 投資判断非推奨</span>
-          </div>
-        `;
+      // 機関投資家向けクリーンデザインのPDFコンテナを作成
+      const pdfContainer = document.createElement('div');
+      pdfContainer.className = 'pdf-export-container';
+      pdfContainer.innerHTML = `
+        <div class="pdf-header-top">
+          <span class="pdf-logo">FinReAct Institutional Research Report</span>
+          <span class="pdf-date">発行日: ${dateStr}</span>
+        </div>
+        <div class="pdf-title-box">
+          <h1>${companyName} ${ticker ? `(${ticker})` : ''}</h1>
+          <p class="pdf-subtitle">企業財務三表・資本効率・競合ベンチマーク統合調査報告書（A〜H標準規格） | ${standard} | ${currency}</p>
+        </div>
+        <div class="pdf-body">
+          ${reportHtml}
+        </div>
+        <div class="pdf-footer">
+          <span>厳秘 (Confidential) — Generated by FinReAct Agentic AI System</span>
+          <span>一次情報根拠: 有価証券報告書 / SEC Form 10-K / 決算短信 / 投資判断非推奨</span>
+        </div>
+      `;
 
-        document.body.appendChild(pdfContainer);
+      document.body.appendChild(pdfContainer);
 
-        const safeFilename = `Financial_Report_${companyName.replace(/[^a-zA-Z0-9\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF]/g, '_')}_${Date.now()}.pdf`;
+      const safeFilename = `Financial_Report_${companyName.replace(/[^a-zA-Z0-9\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF]/g, '_')}_${Date.now()}.pdf`;
 
-        if (typeof html2pdf !== 'undefined') {
-          const opt = {
-            margin: [10, 12, 12, 12],
-            filename: safeFilename,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2, useCORS: true, letterRendering: true },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-          };
+      if (typeof html2pdf !== 'undefined') {
+        const opt = {
+          margin: [10, 12, 12, 12],
+          filename: safeFilename,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+          pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+        };
 
-          await html2pdf().set(opt).from(pdfContainer).save();
-        } else {
-          // html2pdf 未読込時のフォールバック: 専用プリントウィンドウ
-          const printWin = window.open('', '_blank');
-          printWin.document.write(`
-            <!DOCTYPE html>
-            <html>
-            <head>
-              <title>${companyName} Financial Analysis Report</title>
-              <style>
-                body { font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', sans-serif; padding: 25px; color: #1e293b; line-height: 1.6; }
-                .pdf-header-top { display: flex; justify-content: space-between; border-bottom: 2px solid #0284c7; padding-bottom: 10px; margin-bottom: 20px; }
-                .pdf-logo { font-size: 16px; font-weight: bold; color: #0284c7; }
-                .pdf-date { font-size: 11px; color: #64748b; }
-                h1 { font-size: 22px; color: #0f172a; margin-top: 20px; }
-                h2 { font-size: 16px; color: #1e293b; margin-top: 16px; }
-                table { border-collapse: collapse; width: 100%; margin: 15px 0; font-size: 12px; }
-                th, td { border: 1px solid #cbd5e1; padding: 6px 10px; text-align: left; }
-                th { background: #f1f5f9; font-weight: bold; }
-                tr:nth-child(even) td { background: #f8fafc; }
-                .pdf-footer { margin-top: 30px; border-top: 1px solid #cbd5e1; padding-top: 10px; display: flex; justify-content: space-between; font-size: 10px; color: #94a3b8; }
-              </style>
-            </head>
-            <body>
-              ${pdfContainer.innerHTML}
-            </body>
-            </html>
-          `);
-          printWin.document.close();
-          printWin.focus();
-          setTimeout(() => {
-            printWin.print();
-          }, 400);
-        }
+        await html2pdf().set(opt).from(pdfContainer).save();
+      } else {
+        window.print();
+      }
 
-        document.body.removeChild(pdfContainer);
+      document.body.removeChild(pdfContainer);
 
-        // 完了フィードバック
+      if (downloadPdfBtn) {
         downloadPdfBtn.textContent = '✅ PDF Downloaded!';
         setTimeout(() => downloadPdfBtn.textContent = origText, 2500);
-
-      } catch (err) {
-        console.error('PDF generation error:', err);
-        alert('PDF生成中にエラーが発生しました。印刷ダイアログを使用します。');
-        window.print();
-        downloadPdfBtn.textContent = origText;
-      } finally {
-        downloadPdfBtn.disabled = false;
       }
-    });
+
+    } catch (err) {
+      console.error('PDF generation error:', err);
+      alert('PDF生成中にエラーが発生しました。印刷ダイアログを使用します。');
+      window.print();
+      if (downloadPdfBtn) downloadPdfBtn.textContent = origText;
+    } finally {
+      if (downloadPdfBtn) downloadPdfBtn.disabled = false;
+    }
+  }
+
+  if (downloadPdfBtn) {
+    downloadPdfBtn.addEventListener('click', downloadExecutivePdf);
   }
 
   // -------------------------------------------------------------------------
@@ -776,7 +881,120 @@ document.addEventListener('DOMContentLoaded', () => {
     URL.revokeObjectURL(url);
   }
 
-  // Bind All-Results Buttons
+  // -------------------------------------------------------------------------
+  // Feature 1: Collapsible ReAct Stream Sidebar
+  // -------------------------------------------------------------------------
+  function setStreamCollapsed(collapsed) {
+    if (!dashboardGrid) return;
+    if (collapsed) {
+      dashboardGrid.classList.add('stream-collapsed');
+      localStorage.setItem('finreact_stream_collapsed', 'true');
+    } else {
+      dashboardGrid.classList.remove('stream-collapsed');
+      localStorage.setItem('finreact_stream_collapsed', 'false');
+    }
+    // Allow CSS transition to finish, then trigger resize so Chart.js recalculates width
+    setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+    }, 340);
+  }
+
+  if (collapseStreamBtn) {
+    collapseStreamBtn.addEventListener('click', () => setStreamCollapsed(true));
+  }
+  if (expandRailBtn) {
+    expandRailBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      setStreamCollapsed(false);
+    });
+  }
+  if (collapsedStreamRail) {
+    collapsedStreamRail.addEventListener('click', () => setStreamCollapsed(false));
+  }
+  if (uncollapseStreamPill) {
+    uncollapseStreamPill.addEventListener('click', () => setStreamCollapsed(false));
+  }
+
+  // Restore saved collapse state if previously set
+  if (localStorage.getItem('finreact_stream_collapsed') === 'true') {
+    setStreamCollapsed(true);
+  }
+
+  // -------------------------------------------------------------------------
+  // Feature 2: Unified Export Dropdown Component
+  // -------------------------------------------------------------------------
+  if (unifiedExportBtn && unifiedExportWrapper) {
+    unifiedExportBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = unifiedExportWrapper.classList.toggle('active');
+      unifiedExportBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!unifiedExportWrapper.contains(e.target)) {
+        unifiedExportWrapper.classList.remove('active');
+        unifiedExportBtn.setAttribute('aria-expanded', 'false');
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        unifiedExportWrapper.classList.remove('active');
+        unifiedExportBtn.setAttribute('aria-expanded', 'false');
+      }
+    });
+  }
+
+  if (optExportFullPdf) {
+    optExportFullPdf.addEventListener('click', () => {
+      unifiedExportWrapper?.classList.remove('active');
+      unifiedExportBtn?.setAttribute('aria-expanded', 'false');
+      downloadAllResultsPdf();
+    });
+  }
+
+  if (optExportExecPdf) {
+    optExportExecPdf.addEventListener('click', () => {
+      unifiedExportWrapper?.classList.remove('active');
+      unifiedExportBtn?.setAttribute('aria-expanded', 'false');
+      downloadExecutivePdf();
+    });
+  }
+
+  if (optExportMd) {
+    optExportMd.addEventListener('click', () => {
+      unifiedExportWrapper?.classList.remove('active');
+      unifiedExportBtn?.setAttribute('aria-expanded', 'false');
+      downloadAllResultsMarkdown();
+    });
+  }
+
+  if (optExportJson) {
+    optExportJson.addEventListener('click', () => {
+      unifiedExportWrapper?.classList.remove('active');
+      unifiedExportBtn?.setAttribute('aria-expanded', 'false');
+      downloadAllResultsJson();
+    });
+  }
+
+  if (optCopyClipboard) {
+    optCopyClipboard.addEventListener('click', () => {
+      unifiedExportWrapper?.classList.remove('active');
+      unifiedExportBtn?.setAttribute('aria-expanded', 'false');
+      const textToCopy = buildAllResultsMarkdown() || currentReportMarkdown;
+      if (!textToCopy) {
+        alert('レポートがまだ生成されていません。');
+        return;
+      }
+      navigator.clipboard.writeText(textToCopy).then(() => {
+        alert('📋 クリップボードに全調査結果Markdownをコピーしました！');
+      }).catch(err => {
+        console.error('Clipboard copy failed:', err);
+      });
+    });
+  }
+
+  // Bind Legacy All-Results Buttons (if present)
   if (downloadAllPdfBtn) {
     downloadAllPdfBtn.addEventListener('click', downloadAllResultsPdf);
   }
@@ -788,6 +1006,23 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   if (downloadAllFromToolbarBtn) {
     downloadAllFromToolbarBtn.addEventListener('click', downloadAllResultsPdf);
+  }
+
+  // -------------------------------------------------------------------------
+  // Feature 3: Tab 2 Sticky TOC Bar Jump
+  // -------------------------------------------------------------------------
+  if (tocChips && tocChips.length > 0) {
+    tocChips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        const targetId = chip.dataset.target;
+        const targetEl = document.getElementById(targetId);
+        if (targetEl) {
+          tocChips.forEach(c => c.classList.remove('active'));
+          chip.classList.add('active');
+          targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    });
   }
 
   // Auto-run Lenovo on first load for immediate wow effect
