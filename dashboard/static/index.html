@@ -17,122 +17,159 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
   <!-- Custom CSS -->
-  <link rel="stylesheet" href="/static/css/style.css?v=2.4.5">
+  <link rel="stylesheet" href="/static/css/style.css?v=2.5.0">
 </head>
 <body class="theme-dark">
-  <!-- Top Navigation Header -->
-  <header class="app-header" id="appHeader">
-    <div class="header-left">
-      <div class="brand-logo">
-        <span class="logo-icon">⚡</span>
-        <span class="logo-text">Fin<span class="gradient-text">ReAct</span></span>
-        <span class="version-tag">Agentic AI v2.4</span>
-      </div>
-    </div>
-
-    <!-- Quick Presets & Search Input -->
-    <div class="header-center">
-      <div class="preset-group">
-        <span class="preset-label" data-i18n="presetsLabel">Presets:</span>
-        <button type="button" class="preset-chip active" data-company="lenovo" id="presetLenovo">
-          <span class="chip-dot"></span> Lenovo (0992.HK)
-        </button>
-        <button type="button" class="preset-chip" data-company="demingli" id="presetDemingli">
-          <span class="chip-dot"></span> 德明利 (001309.SZ)
-        </button>
-        <button type="button" class="preset-chip" data-company="tencent" id="presetTencent">
-          <span class="chip-dot"></span> Tencent (0700.HK)
-        </button>
-        <button type="button" class="preset-chip" data-company="samsung" id="presetSamsung">
-          <span class="chip-dot"></span> Samsung (005930.KS)
-        </button>
-        <button type="button" class="preset-chip" data-company="alibaba" id="presetAlibaba">
-          <span class="chip-dot"></span> Alibaba (9988.HK)
-        </button>
-        <button type="button" class="preset-chip" data-company="toyota" id="presetToyota">
-          <span class="chip-dot"></span> Toyota (7203.T)
-        </button>
-        <button type="button" class="preset-chip" data-company="tesla" id="presetTesla">
-          <span class="chip-dot"></span> Tesla (TSLA)
-        </button>
-        <button type="button" class="preset-chip" data-company="sony" id="presetSony">
-          <span class="chip-dot"></span> Sony (6758.T)
-        </button>
-        <button type="button" class="preset-chip" data-company="apple" id="presetApple">
-          <span class="chip-dot"></span> Apple (AAPL)
-        </button>
+  <!-- Top Navigation Container (Two-Tier Institutional Architecture) -->
+  <div class="top-nav-container" id="topNavContainer">
+    <!-- Tier 1: Global Branding, Central Command Search & System Controls -->
+    <header class="app-header" id="appHeader">
+      <div class="header-left">
+        <div class="brand-logo">
+          <span class="logo-icon">⚡</span>
+          <div class="brand-text-wrap">
+            <span class="logo-text">Fin<span class="gradient-text">ReAct</span></span>
+            <span class="version-tag">Agentic AI v2.5</span>
+          </div>
+        </div>
       </div>
 
-      <div class="search-container">
-        <input type="text" id="companyInput" placeholder="企業名またはティッカーを入力 (例: 德明利, Tencent, Samsung, Alibaba, 001309.SZ, 0700.HK, TSLA)..." data-i18n-placeholder="searchPlaceholder" value="Lenovo">
-        <button id="runAnalysisBtn" class="btn-primary">
-          <span class="btn-icon">▶</span>
-          <span data-i18n="runReActBtn">Run ReAct</span>
-        </button>
-      </div>
-    </div>
-
-    <div class="header-right">
-      <div class="agent-status" id="agentStatusBadge">
-        <span class="status-pulse"></span>
-        <span id="statusText" data-i18n="agentReady">AGENT READY</span>
-      </div>
-
-      <!-- Multilingual Language Selector -->
-      <div class="lang-selector-wrapper" id="langSelectorWrapper">
-        <button id="langSelectBtn" class="btn-lang-select" type="button" aria-haspopup="true" aria-expanded="false" title="言語切替 / Select Language">
-          <span class="lang-icon">🌐</span>
-          <span id="activeLangLabel">🇯🇵 日本語</span>
-          <span class="lang-caret">▾</span>
-        </button>
-        <div class="lang-dropdown-menu" id="langDropdownMenu">
-          <button class="lang-option-btn active" data-lang="ja" type="button">
-            <span class="opt-flag">🇯🇵</span>
-            <div class="opt-text-wrap">
-              <span class="opt-name">日本語</span>
-              <span class="opt-sub">日本基準 / 金融庁</span>
-            </div>
-          </button>
-          <button class="lang-option-btn" data-lang="en" type="button">
-            <span class="opt-flag">🇺🇸</span>
-            <div class="opt-text-wrap">
-              <span class="opt-name">English (US)</span>
-              <span class="opt-sub">US GAAP / SEC</span>
-            </div>
-          </button>
-          <button class="lang-option-btn" data-lang="zh-CN" type="button">
-            <span class="opt-flag">🇨🇳</span>
-            <div class="opt-text-wrap">
-              <span class="opt-name">简体中文</span>
-              <span class="opt-sub">中国会计准则 / 投行</span>
-            </div>
-          </button>
-          <button class="lang-option-btn" data-lang="zh-TW" type="button">
-            <span class="opt-flag">🇭🇰</span>
-            <div class="opt-text-wrap">
-              <span class="opt-name">繁體中文</span>
-              <span class="opt-sub">港台機構投資者標準</span>
-            </div>
-          </button>
-          <button class="lang-option-btn" data-lang="fr" type="button">
-            <span class="opt-flag">🇫🇷</span>
-            <div class="opt-text-wrap">
-              <span class="opt-name">Français</span>
-              <span class="opt-sub">Normes IFRS / AMF</span>
-            </div>
+      <!-- Center: Wide Command-Bar Style Search -->
+      <div class="header-center">
+        <div class="search-command-bar">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="companyInput" placeholder="企業名またはティッカー (例: 德明利, Tencent, 001309.SZ, 0700.HK, Samsung, TSLA)..." data-i18n-placeholder="searchPlaceholder" value="Lenovo">
+          <button id="runAnalysisBtn" class="btn-primary" type="button">
+            <span class="btn-icon">▶</span>
+            <span data-i18n="runReActBtn">Run ReAct</span>
           </button>
         </div>
       </div>
 
-      <button id="modelBadgeBtn" class="btn-model-badge" title="Click to Change Gemini Model">
-        <span class="model-icon">🤖</span>
-        <span id="activeModelLabel">gemini-2.5-flash</span>
-      </button>
-      <button id="apiKeyModalBtn" class="btn-ghost" data-i18n-title="settingsTitle" title="Gemini API Key Settings">
-        🔑 <span class="hide-mobile" data-i18n="settingsTitle">Settings</span>
-      </button>
+      <!-- Right: Unified System Controls Cluster (Never Overflows) -->
+      <div class="header-right">
+        <div class="agent-status" id="agentStatusBadge">
+          <span class="status-pulse"></span>
+          <span id="statusText" data-i18n="agentReady">AGENT READY</span>
+        </div>
+
+        <!-- Multilingual Language Selector -->
+        <div class="lang-selector-wrapper" id="langSelectorWrapper">
+          <button id="langSelectBtn" class="btn-lang-select" type="button" aria-haspopup="true" aria-expanded="false" title="言語切替 / Select Language">
+            <span class="lang-icon">🌐</span>
+            <span id="activeLangLabel">🇯🇵 日本語</span>
+            <span class="lang-caret">▾</span>
+          </button>
+          <div class="lang-dropdown-menu" id="langDropdownMenu">
+            <button class="lang-option-btn active" data-lang="ja" type="button">
+              <span class="opt-flag">🇯🇵</span>
+              <div class="opt-text-wrap">
+                <span class="opt-name">日本語</span>
+                <span class="opt-sub">日本基準 / 金融庁</span>
+              </div>
+            </button>
+            <button class="lang-option-btn" data-lang="en" type="button">
+              <span class="opt-flag">🇺🇸</span>
+              <div class="opt-text-wrap">
+                <span class="opt-name">English (US)</span>
+                <span class="opt-sub">US GAAP / SEC</span>
+              </div>
+            </button>
+            <button class="lang-option-btn" data-lang="zh-CN" type="button">
+              <span class="opt-flag">🇨🇳</span>
+              <div class="opt-text-wrap">
+                <span class="opt-name">简体中文</span>
+                <span class="opt-sub">中国会计准则 / 投行</span>
+              </div>
+            </button>
+            <button class="lang-option-btn" data-lang="zh-TW" type="button">
+              <span class="opt-flag">🇭🇰</span>
+              <div class="opt-text-wrap">
+                <span class="opt-name">繁體中文</span>
+                <span class="opt-sub">港台機構投資者標準</span>
+              </div>
+            </button>
+            <button class="lang-option-btn" data-lang="fr" type="button">
+              <span class="opt-flag">🇫🇷</span>
+              <div class="opt-text-wrap">
+                <span class="opt-name">Français</span>
+                <span class="opt-sub">Normes IFRS / AMF</span>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Model Badge -->
+        <button id="modelBadgeBtn" class="btn-model-badge" title="Click to Change Gemini Model">
+          <span class="model-icon">🤖</span>
+          <span id="activeModelLabel">gemini-2.5-flash</span>
+        </button>
+
+        <!-- API Key Settings Button -->
+        <button id="apiKeyModalBtn" class="btn-settings-pill" data-i18n-title="settingsTitle" title="Gemini API Key Settings">
+          <span class="settings-icon">🔑</span>
+          <span class="settings-label" data-i18n="settingsTitle">API Key</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Tier 2: Dedicated Benchmark Presets Ribbon -->
+    <div class="benchmark-ribbon" id="benchmarkRibbon">
+      <div class="ribbon-inner">
+        <div class="ribbon-lead">
+          <span class="ribbon-icon">⚡</span>
+          <span class="ribbon-label" data-i18n="presetsLabel">Quick Benchmarks:</span>
+        </div>
+        <div class="preset-scroll-track" id="presetScrollTrack">
+          <button type="button" class="preset-chip active" data-company="lenovo" id="presetLenovo">
+            <span class="chip-flag">🇭🇰</span>
+            <span class="chip-name">Lenovo</span>
+            <span class="chip-ticker">0992.HK</span>
+          </button>
+          <button type="button" class="preset-chip" data-company="demingli" id="presetDemingli">
+            <span class="chip-flag">🇨🇳</span>
+            <span class="chip-name">德明利</span>
+            <span class="chip-ticker">001309.SZ</span>
+          </button>
+          <button type="button" class="preset-chip" data-company="tencent" id="presetTencent">
+            <span class="chip-flag">🇭🇰</span>
+            <span class="chip-name">Tencent</span>
+            <span class="chip-ticker">0700.HK</span>
+          </button>
+          <button type="button" class="preset-chip" data-company="samsung" id="presetSamsung">
+            <span class="chip-flag">🇰🇷</span>
+            <span class="chip-name">Samsung</span>
+            <span class="chip-ticker">005930.KS</span>
+          </button>
+          <button type="button" class="preset-chip" data-company="alibaba" id="presetAlibaba">
+            <span class="chip-flag">🇨🇳</span>
+            <span class="chip-name">Alibaba</span>
+            <span class="chip-ticker">9988.HK</span>
+          </button>
+          <button type="button" class="preset-chip" data-company="toyota" id="presetToyota">
+            <span class="chip-flag">🇯🇵</span>
+            <span class="chip-name">Toyota</span>
+            <span class="chip-ticker">7203.T</span>
+          </button>
+          <button type="button" class="preset-chip" data-company="tesla" id="presetTesla">
+            <span class="chip-flag">🇺🇸</span>
+            <span class="chip-name">Tesla</span>
+            <span class="chip-ticker">TSLA</span>
+          </button>
+          <button type="button" class="preset-chip" data-company="sony" id="presetSony">
+            <span class="chip-flag">🇯🇵</span>
+            <span class="chip-name">Sony</span>
+            <span class="chip-ticker">6758.T</span>
+          </button>
+          <button type="button" class="preset-chip" data-company="apple" id="presetApple">
+            <span class="chip-flag">🇺🇸</span>
+            <span class="chip-name">Apple</span>
+            <span class="chip-ticker">AAPL</span>
+          </button>
+        </div>
+      </div>
     </div>
-  </header>
+  </div>
 
   <!-- Main Multi-Column Grid Layout -->
   <main class="dashboard-grid" id="dashboardGrid">
