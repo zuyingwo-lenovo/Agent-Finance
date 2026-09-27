@@ -65,6 +65,34 @@ document.addEventListener('DOMContentLoaded', () => {
   const customModelField = document.getElementById('customModelField');
   const customModelInput = document.getElementById('customModelInput');
 
+  // History & Audit Trail Modal Elements
+  const historyModalBtn = document.getElementById('historyModalBtn');
+  const historyCountBadge = document.getElementById('historyCountBadge');
+  const historyModal = document.getElementById('historyModal');
+  const closeHistoryModalBtn = document.getElementById('closeHistoryModalBtn');
+  const historySearchInput = document.getElementById('historySearchInput');
+  const exportAllHistoryBtn = document.getElementById('exportAllHistoryBtn');
+  const clearAllHistoryBtn = document.getElementById('clearAllHistoryBtn');
+  const historyItemsList = document.getElementById('historyItemsList');
+
+  // Analyzing Overlay Elements
+  const analyzingOverlay = document.getElementById('analyzingOverlay');
+  const analyzingTargetName = document.getElementById('analyzingTargetName');
+  const analyzingCurrentStepText = document.getElementById('analyzingCurrentStepText');
+  const analyzingCurrentSnippet = document.getElementById('analyzingCurrentSnippet');
+  const analyzingModelLabel = document.getElementById('analyzingModelLabel');
+  const pipeStep1 = document.getElementById('pipeStep1');
+  const pipeStep2 = document.getElementById('pipeStep2');
+  const pipeStep3 = document.getElementById('pipeStep3');
+  const pipeStep4 = document.getElementById('pipeStep4');
+  const pipeStep5 = document.getElementById('pipeStep5');
+
+  // Historical Session Banner Elements
+  const historicalNoticeBanner = document.getElementById('historicalNoticeBanner');
+  const historicalBannerTitle = document.getElementById('historicalBannerTitle');
+  const historicalBannerMeta = document.getElementById('historicalBannerMeta');
+  const historicalBannerRerunBtn = document.getElementById('historicalBannerRerunBtn');
+
   // Multilingual Selector Elements
   const langSelectorWrapper = document.getElementById('langSelectorWrapper');
   const langSelectBtn = document.getElementById('langSelectBtn');
@@ -261,9 +289,29 @@ document.addEventListener('DOMContentLoaded', () => {
   // -------------------------------------------------------------------------
   // ReAct SSE Streaming Execution (Secure URL Parameters)
   // -------------------------------------------------------------------------
+  function setPipelineStep(step) {
+    const steps = [pipeStep1, pipeStep2, pipeStep3, pipeStep4, pipeStep5];
+    steps.forEach((el, idx) => {
+      if (!el) return;
+      const sNum = idx + 1;
+      if (sNum < step) {
+        el.className = 'pipe-step done';
+      } else if (sNum === step) {
+        el.className = 'pipe-step active';
+      } else {
+        el.className = 'pipe-step';
+      }
+    });
+  }
+
   async function startReActAnalysis(companyName) {
     if (activeEventSource) {
       activeEventSource.close();
+    }
+
+    // Hide any previous historical banner
+    if (historicalNoticeBanner) {
+      historicalNoticeBanner.style.display = 'none';
     }
 
     // Set UI state to running and reset logs
@@ -272,6 +320,22 @@ document.addEventListener('DOMContentLoaded', () => {
     stepCounter.textContent = 'Step 1/5';
     currentReactLogs = [];
     currentAnalysisData = null;
+
+    // Show Analyzing Overlay immediately so STALE DATA is NOT displayed!
+    if (analyzingOverlay) {
+      analyzingOverlay.style.display = 'flex';
+      if (analyzingTargetName) analyzingTargetName.textContent = companyName;
+      if (analyzingModelLabel) analyzingModelLabel.textContent = activeModel;
+      if (analyzingCurrentStepText) {
+        analyzingCurrentStepText.textContent = (typeof t === 'function')
+          ? `Step 1/5: ${t('welcomeStep1')}`
+          : 'Step 1/5: 一次情報・有報・短信取得';
+      }
+      if (analyzingCurrentSnippet) {
+        analyzingCurrentSnippet.textContent = `法定開示（EDINET/SEC/HKEX等）および市場フィードを探索中: ${companyName}`;
+      }
+      setPipelineStep(1);
+    }
 
     // If API Key is present in localStorage, ensure we have an ephemeral token
     const clientKey = localStorage.getItem('finreact_gemini_api_key') || '';
@@ -292,7 +356,7 @@ document.addEventListener('DOMContentLoaded', () => {
     activeEventSource.onmessage = (event) => {
       try {
         const payload = JSON.parse(event.data);
-        handleStreamPayload(payload);
+        handleStreamPayload(payload, companyName);
       } catch (err) {
         console.error('Failed to parse SSE payload:', err);
       }
@@ -302,6 +366,7 @@ document.addEventListener('DOMContentLoaded', () => {
       console.warn('SSE Stream ended or closed:', err);
       activeEventSource.close();
       setAgentState(false);
+      if (analyzingOverlay) analyzingOverlay.style.display = 'none';
     };
   }
 
@@ -319,12 +384,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function handleStreamPayload(data) {
+  function handleStreamPayload(data, targetQuery = '') {
     const type = data.type;
 
     if (data.error || type === 'error') {
       appendCard('error', '⚠️ Reasoning Error', data.error || data.content || 'An error occurred during reasoning.');
       setAgentState(false);
+      if (analyzingOverlay) analyzingOverlay.style.display = 'none';
       if (activeEventSource) activeEventSource.close();
       return;
     }
@@ -335,10 +401,23 @@ document.addEventListener('DOMContentLoaded', () => {
       if (railStepBadge) railStepBadge.textContent = `${data.step}/5`;
       if (uncollapseStreamPill) uncollapseStreamPill.innerHTML = `🧠 Stream (Step ${data.step}/5) ❯`;
       appendCard('thought', `🧠 Thought ${data.step}: ${data.title || ''}`, data.content);
+
+      // Advance Live Analyzing Overlay Pipeline & Snippets
+      setPipelineStep(data.step);
+      if (analyzingCurrentStepText) {
+        analyzingCurrentStepText.textContent = `Step ${data.step}/5: ${data.title || ''}`;
+      }
+      if (analyzingCurrentSnippet) {
+        analyzingCurrentSnippet.textContent = data.content;
+      }
     } else if (type === 'action') {
       currentReactLogs.push(data);
       const paramStr = data.parameters ? JSON.stringify(data.parameters, null, 2) : '';
       appendCard('action', `⚡ Action: ${data.tool}`, `Parameters:\n${paramStr}`);
+
+      if (analyzingCurrentSnippet) {
+        analyzingCurrentSnippet.textContent = `⚡ ツール実行中: ${data.tool}`;
+      }
     } else if (type === 'observation') {
       currentReactLogs.push(data);
       appendCard('observation', `👁️ Observation: [Result Verified]`, data.content);
@@ -347,7 +426,18 @@ document.addEventListener('DOMContentLoaded', () => {
       if (stepCounter) stepCounter.textContent = `Step 5/5`;
       if (railStepBadge) railStepBadge.textContent = `5/5`;
       if (uncollapseStreamPill) uncollapseStreamPill.innerHTML = `🧠 Stream (Step 5/5) ❯`;
+
+      // Hide analyzing overlay now that new report is ready!
+      if (analyzingOverlay) {
+        analyzingOverlay.style.display = 'none';
+      }
+
       renderFinalDashboard(data);
+
+      // Save to Research History & Audit Trail Archive!
+      const queryName = targetQuery || (companyInput ? companyInput.value.trim() : (data.meta?.company_name || 'Enterprise'));
+      saveAnalysisToHistory(data, queryName, currentReactLogs);
+
       if (activeEventSource) {
         activeEventSource.close();
       }
@@ -1611,6 +1701,351 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     });
   }
+
+  // -------------------------------------------------------------------------
+  // Feature 4: Research History & Audit Trail Archive Management
+  // -------------------------------------------------------------------------
+  const HISTORY_STORAGE_KEY = 'finreact_research_history';
+
+  function getResearchHistory() {
+    try {
+      const raw = localStorage.getItem(HISTORY_STORAGE_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) {
+      console.warn('Failed to parse history:', e);
+      return [];
+    }
+  }
+
+  function saveAnalysisToHistory(data, query, logs) {
+    if (!data || !data.meta) return;
+    try {
+      const history = getResearchHistory();
+      const now = new Date();
+      const pad = (n) => String(n).padStart(2, '0');
+      const formattedTime = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+
+      const ticker = data.meta.ticker || 'N/A';
+      const companyName = data.meta.company_name || query;
+      const model = data.meta.model || activeModel;
+      const sources = data.meta.sources || ['HKEXnews', 'SEC EDGAR', 'Yahoo Finance Global API'];
+      const tools = data.meta.tools_used || ['retrieve_primary_disclosures', 'financial_calc.py', 'benchmark_peers', 'evaluate_risk_matrix', 'build_a_to_h_report'];
+      const skills = data.meta.skills_used || ['corporate-finance-analyst', 'financial_calc.py'];
+
+      const newRecord = {
+        id: `session_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        timestamp: now.toISOString(),
+        formattedTime: formattedTime,
+        query: query,
+        companyName: companyName,
+        ticker: ticker,
+        currency: data.meta.currency || 'USD',
+        standard: data.meta.standard || 'IFRS',
+        sector: data.meta.sector || 'General Corporate',
+        healthScore: data.meta.health_score || 85,
+        model: model,
+        sources: sources,
+        tools: tools,
+        skills: skills,
+        kpis: data.kpis || {},
+        fullData: data,
+        reactLogs: logs || []
+      };
+
+      // Filter out duplicate identical company executed in the last 30 seconds, then unshift
+      const updated = [newRecord, ...history.filter(h => h.companyName !== companyName || (Date.now() - new Date(h.timestamp).getTime()) > 30000)].slice(0, 30);
+      localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(updated));
+      updateHistoryBadge();
+    } catch (e) {
+      console.error('Failed to save analysis to history:', e);
+    }
+  }
+
+  function updateHistoryBadge() {
+    if (!historyCountBadge) return;
+    const history = getResearchHistory();
+    historyCountBadge.textContent = history.length;
+    historyCountBadge.style.display = history.length > 0 ? 'inline-block' : 'none';
+  }
+
+  function renderHistoryItems(filterQuery = '') {
+    if (!historyItemsList) return;
+    const history = getResearchHistory();
+    const q = filterQuery.toLowerCase().trim();
+
+    const filtered = q
+      ? history.filter(item => 
+          (item.companyName && item.companyName.toLowerCase().includes(q)) ||
+          (item.ticker && item.ticker.toLowerCase().includes(q)) ||
+          (item.formattedTime && item.formattedTime.includes(q)) ||
+          (item.model && item.model.toLowerCase().includes(q)) ||
+          (item.sources && item.sources.some(s => s.toLowerCase().includes(q)))
+        )
+      : history;
+
+    if (filtered.length === 0) {
+      const emptyText = (typeof t === 'function') ? t('historyEmpty') : '調査履歴がありません。';
+      historyItemsList.innerHTML = `
+        <div class="history-empty-state">
+          <div class="empty-icon">📜</div>
+          <p>${emptyText}</p>
+        </div>
+      `;
+      return;
+    }
+
+    const restoreLabel = (typeof t === 'function' && t('historyLoadBtn') && t('historyLoadBtn') !== 'historyLoadBtn') ? t('historyLoadBtn') : '⚡ 調査結果を復元';
+    const deleteLabel = (typeof t === 'function' && t('historyDeleteBtn') && t('historyDeleteBtn') !== 'historyDeleteBtn') ? t('historyDeleteBtn') : '🗑️ 削除';
+    const singleDlLabel = (typeof t === 'function' && t('historyExportSingleBtn') && t('historyExportSingleBtn') !== 'historyExportSingleBtn') ? t('historyExportSingleBtn') : 'JSON保存';
+
+    historyItemsList.innerHTML = filtered.map(item => {
+      const sourcesHtml = (item.sources || []).slice(0, 3).map(s => `<span class="audit-source-pill">${s}</span>`).join('');
+      const skillsStr = (item.skills || []).join(', ');
+      const k = item.kpis || {};
+
+      return `
+        <div class="history-card" data-id="${item.id}">
+          <div class="history-card-header">
+            <div class="history-title-area">
+              <span class="history-company-name">${item.companyName}</span>
+              <span class="history-ticker-badge">${item.ticker}</span>
+              <span class="audit-source-pill" style="border-color: rgba(245, 158, 11, 0.4); color: #fbbf24;">${item.standard}</span>
+            </div>
+            <div class="history-header-meta">
+              <span class="history-time-tag">🕒 ${item.formattedTime}</span>
+              <span class="history-model-tag">🤖 ${item.model}</span>
+            </div>
+          </div>
+
+          <!-- Audit Provenance Trace -->
+          <div class="history-audit-row">
+            <div class="audit-sources-group">
+              <span class="audit-lead-label">📡 Sources:</span>
+              ${sourcesHtml}
+            </div>
+            <div class="audit-skills-group">
+              🛠️ ${skillsStr}
+            </div>
+          </div>
+
+          <!-- KPI Snapshot -->
+          <div class="history-kpi-strip">
+            <div class="history-kpi-cell">
+              <span class="cell-lbl">Health Score</span>
+              <span class="cell-val" style="color: var(--accent-emerald);">${item.healthScore}/100</span>
+            </div>
+            <div class="history-kpi-cell">
+              <span class="cell-lbl">Revenue</span>
+              <span class="cell-val">${k.revenue || '-'}</span>
+            </div>
+            <div class="history-kpi-cell">
+              <span class="cell-lbl">OP Margin</span>
+              <span class="cell-val">${k.opm || '-'}</span>
+            </div>
+            <div class="history-kpi-cell">
+              <span class="cell-lbl">ROE</span>
+              <span class="cell-val">${k.roe || '-'}</span>
+            </div>
+            <div class="history-kpi-cell">
+              <span class="cell-lbl">CCC (Cycle)</span>
+              <span class="cell-val">${k.ccc || '-'}</span>
+            </div>
+            <div class="history-kpi-cell">
+              <span class="cell-lbl">Net Debt</span>
+              <span class="cell-val">${k.net_debt_ebitda || '-'}</span>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="history-actions-row">
+            <button type="button" class="btn-history-del" data-action="delete" data-id="${item.id}" title="この履歴を削除">${deleteLabel}</button>
+            <button type="button" class="btn-history-dl" data-action="download" data-id="${item.id}" title="このセッションをJSON保存">📥 ${singleDlLabel}</button>
+            <button type="button" class="btn-history-restore" data-action="restore" data-id="${item.id}" title="ダッシュボードに復元">${restoreLabel}</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // Bind item action buttons
+    historyItemsList.querySelectorAll('button[data-action]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const action = btn.dataset.action;
+        const id = btn.dataset.id;
+        const record = history.find(h => h.id === id);
+        if (!record) return;
+
+        if (action === 'restore') {
+          restoreHistoricalAnalysis(record);
+        } else if (action === 'download') {
+          downloadSingleHistoryJson(record);
+        } else if (action === 'delete') {
+          deleteHistoryItem(id);
+        }
+      });
+    });
+  }
+
+  function restoreHistoricalAnalysis(record) {
+    if (!record || !record.fullData) return;
+
+    // Set state
+    currentAnalysisData = record.fullData;
+    currentReactLogs = record.reactLogs || [];
+    if (companyInput) companyInput.value = record.companyName;
+
+    // Close History Modal
+    if (historyModal) historyModal.classList.remove('active');
+
+    // Populate Left Stream Panel with recorded ReAct logs
+    streamLogContainer.innerHTML = '';
+    if (currentReactLogs.length > 0) {
+      currentReactLogs.forEach(log => {
+        if (log.type === 'thought') {
+          appendCard('thought', `🧠 Thought ${log.step}: ${log.title || ''}`, log.content);
+        } else if (log.type === 'action') {
+          const paramStr = log.parameters ? JSON.stringify(log.parameters, null, 2) : '';
+          appendCard('action', `⚡ Action: ${log.tool}`, `Parameters:\n${paramStr}`);
+        } else if (log.type === 'observation') {
+          appendCard('observation', `👁️ Observation: [Result Verified]`, log.content);
+        }
+      });
+      if (stepCounter) stepCounter.textContent = `Step 5/5`;
+      if (railStepBadge) railStepBadge.textContent = `5/5`;
+      if (uncollapseStreamPill) uncollapseStreamPill.innerHTML = `🧠 Stream (Step 5/5) ❯`;
+    }
+
+    // Render Final Dashboard
+    renderFinalDashboard(record.fullData);
+
+    // Show Historical Active Notice Banner
+    if (historicalNoticeBanner) {
+      historicalNoticeBanner.style.display = 'flex';
+      if (historicalBannerTitle) {
+        const noticeText = (typeof t === 'function') ? t('historyBannerNotice') : '過去の調査アーカイブを表示中';
+        historicalBannerTitle.textContent = `${noticeText}: ${record.companyName}`;
+      }
+      if (historicalBannerMeta) {
+        historicalBannerMeta.textContent = `記録日時: ${record.formattedTime} | Model: ${record.model} | Sources: ${(record.sources || []).join(', ')}`;
+      }
+    }
+
+    // Update preset chips highlight if matching
+    presetChips.forEach(c => {
+      const cCompany = c.dataset.company.toLowerCase();
+      if (record.companyName.toLowerCase().includes(cCompany) || (record.ticker && record.ticker.toLowerCase().includes(cCompany))) {
+        c.classList.add('active');
+      } else {
+        c.classList.remove('active');
+      }
+    });
+
+    // Smooth scroll to top of dashboard
+    const intelligencePanel = document.getElementById('intelligencePanel');
+    if (intelligencePanel) {
+      intelligencePanel.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+
+  function downloadSingleHistoryJson(record) {
+    const jsonStr = JSON.stringify(record, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const safeName = record.companyName.replace(/[^a-zA-Z0-9_\u4e00-\u9fa5\u3040-\u309f\u30a0-\u30ff]/g, '_');
+    a.href = url;
+    a.download = `FinReAct_Audit_${safeName}_${record.formattedTime.replace(/[: -]/g, '')}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function exportAllHistoryJson() {
+    const history = getResearchHistory();
+    if (history.length === 0) {
+      alert('エクスポート可能な調査履歴がありません。');
+      return;
+    }
+    const jsonStr = JSON.stringify(history, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `FinReAct_AuditTrail_AllSessions_${Date.now()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function deleteHistoryItem(id) {
+    const history = getResearchHistory();
+    const updated = history.filter(h => h.id !== id);
+    localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(updated));
+    renderHistoryItems(historySearchInput ? historySearchInput.value : '');
+    updateHistoryBadge();
+  }
+
+  function clearAllHistory() {
+    const confirmMsg = (typeof t === 'function') ? t('historyClearConfirm') : '保存されたすべての調査履歴を削除しますか？';
+    if (!confirm(confirmMsg)) return;
+    localStorage.removeItem(HISTORY_STORAGE_KEY);
+    renderHistoryItems('');
+    updateHistoryBadge();
+  }
+
+  // Bind History Modal Controls
+  if (historyModalBtn && historyModal) {
+    historyModalBtn.addEventListener('click', () => {
+      renderHistoryItems(historySearchInput ? historySearchInput.value : '');
+      historyModal.classList.add('active');
+    });
+  }
+
+  if (closeHistoryModalBtn && historyModal) {
+    closeHistoryModalBtn.addEventListener('click', () => {
+      historyModal.classList.remove('active');
+    });
+  }
+
+  if (historyModal) {
+    historyModal.addEventListener('click', (e) => {
+      if (e.target === historyModal) {
+        historyModal.classList.remove('active');
+      }
+    });
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && historyModal && historyModal.classList.contains('active')) {
+      historyModal.classList.remove('active');
+    }
+  });
+
+  if (historySearchInput) {
+    historySearchInput.addEventListener('input', (e) => {
+      renderHistoryItems(e.target.value);
+    });
+  }
+
+  if (exportAllHistoryBtn) {
+    exportAllHistoryBtn.addEventListener('click', exportAllHistoryJson);
+  }
+
+  if (clearAllHistoryBtn) {
+    clearAllHistoryBtn.addEventListener('click', clearAllHistory);
+  }
+
+  if (historicalBannerRerunBtn) {
+    historicalBannerRerunBtn.addEventListener('click', () => {
+      const q = companyInput ? companyInput.value.trim() : 'Lenovo';
+      startReActAnalysis(q);
+    });
+  }
+
+  // Initialize history badge on load
+  updateHistoryBadge();
 
   // Auto-run Lenovo on first load for immediate wow effect
   setTimeout(() => {

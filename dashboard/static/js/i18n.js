@@ -157,7 +157,29 @@ const I18N_DICTIONARY = {
     lblModelSelect: "Gemini 推論モデル:",
     lblCustomModel: "カスタムモデル識別子:",
     lblApiKey: "Gemini API キー (AI Studio):",
-    btnSaveSettings: "Save Settings"
+    btnSaveSettings: "Save Settings",
+
+    // History & Audit Trail Archive
+    historyBtnLabel: "履歴",
+    historyModalTitle: "📜 投資調査履歴 & 監査アーカイブ",
+    historyModalSubtitle: "いつ・何のデータソース・どのモデル/スキルで分析したかを完全記録",
+    historySearchPlaceholder: "企業名・ティッカー・日付で絞り込み...",
+    historyEmpty: "調査履歴がありません。「Run ReAct」を実行すると、調査日時・データソース・モデル・全分析結果が自動的にここに保存されます。",
+    historyLoadBtn: "⚡ 調査結果を復元",
+    historyDeleteBtn: "🗑️ 削除",
+    historyExportAll: "📥 全履歴エクスポート (JSON)",
+    historyClearAll: "🗑️ 全件クリア",
+    historyClearConfirm: "保存されたすべての調査履歴を削除しますか？この操作は取り消せません。",
+    historyBannerNotice: "📂 過去の調査アーカイブを表示中",
+    historyBannerRerun: "⚡ 最新情報で再調査",
+    historyExportSingleBtn: "JSON保存",
+
+    // Live Analyzing Overlay
+    analyzingBadge: "AUTONOMOUS ReAct AGENT RUNNING",
+    analyzingTargetPrefix: "調査対象企業:",
+    analyzingStepPrefix: "現在ステップ:",
+    analyzingFeedLabel: "Live Execution Status",
+    analyzingSourcesTitle: "📡 照会データソース & 実行スキル:"
   },
 
   en: {
@@ -308,7 +330,29 @@ const I18N_DICTIONARY = {
     lblModelSelect: "Gemini Model:",
     lblCustomModel: "Custom Model Identifier:",
     lblApiKey: "Gemini API Key (Google AI Studio):",
-    btnSaveSettings: "Save Settings"
+    btnSaveSettings: "Save Settings",
+
+    // History & Audit Trail Archive
+    historyBtnLabel: "History",
+    historyModalTitle: "📜 Research History & Audit Trail",
+    historyModalSubtitle: "Complete audit trail tracking when, with what data sources, and which models were executed.",
+    historySearchPlaceholder: "Filter by company, ticker, date...",
+    historyEmpty: "No research history found. Run an analysis to automatically record sessions with timestamps and data sources.",
+    historyLoadBtn: "⚡ Restore / View",
+    historyDeleteBtn: "🗑️ Delete",
+    historyExportAll: "📥 Export All (JSON)",
+    historyClearAll: "🗑️ Clear All",
+    historyClearConfirm: "Are you sure you want to delete all stored research history records?",
+    historyBannerNotice: "📂 Viewing Historical Research Archive",
+    historyBannerRerun: "⚡ Re-run Live Analysis",
+    historyExportSingleBtn: "Save JSON",
+
+    // Live Analyzing Overlay
+    analyzingBadge: "AUTONOMOUS ReAct AGENT RUNNING",
+    analyzingTargetPrefix: "Target Entity:",
+    analyzingStepPrefix: "Current Step:",
+    analyzingFeedLabel: "Live Execution Status",
+    analyzingSourcesTitle: "📡 Scanned Data Sources & Skills:"
   },
 
   "zh-CN": {
@@ -459,7 +503,29 @@ const I18N_DICTIONARY = {
     lblModelSelect: "Gemini 推理模型:",
     lblCustomModel: "自定义模型标识符:",
     lblApiKey: "Gemini API 密钥 (Google AI Studio):",
-    btnSaveSettings: "保存设置"
+    btnSaveSettings: "保存设置",
+
+    // History & Audit Trail Archive
+    historyBtnLabel: "历史记录",
+    historyModalTitle: "📜 投资调研历史与审计回溯",
+    historyModalSubtitle: "完整记录调研时间戳、法定数据来源、模型与执行技能，支持一键复原复盘",
+    historySearchPlaceholder: "按企业名、代码或日期筛选...",
+    historyEmpty: "暂无调研历史记录。执行“启动分析”后，所有时间戳、数据源及分析结果将自动归档。",
+    historyLoadBtn: "⚡ 恢复查看",
+    historyDeleteBtn: "🗑️ 删除",
+    historyExportAll: "📥 导出全部 (JSON)",
+    historyClearAll: "🗑️ 清空历史",
+    historyClearConfirm: "确定要清空所有已保存的投研历史记录吗？此操作无法撤销。",
+    historyBannerNotice: "📂 正在查看历史调研存档",
+    historyBannerRerun: "⚡ 重新发起实时调研",
+    historyExportSingleBtn: "保存JSON",
+
+    // Live Analyzing Overlay
+    analyzingBadge: "自律型 ReAct 推理执行中...",
+    analyzingTargetPrefix: "调查目标企业:",
+    analyzingStepPrefix: "当前分析阶段:",
+    analyzingFeedLabel: "实时执行状态",
+    analyzingSourcesTitle: "📡 调取数据源与技能:"
   },
 
   "zh-TW": {
@@ -610,7 +676,29 @@ const I18N_DICTIONARY = {
     lblModelSelect: "Gemini 推理模型:",
     lblCustomModel: "自定義模型標識符:",
     lblApiKey: "Gemini API 密鑰 (Google AI Studio):",
-    btnSaveSettings: "保存設置"
+    btnSaveSettings: "保存設置",
+
+    // History & Audit Trail Archive
+    historyBtnLabel: "歷史記錄",
+    historyModalTitle: "📜 投資調研歷史與審計回溯",
+    historyModalSubtitle: "完整記錄調研時間戳、法定數據來源、模型與執行技能，支持一鍵復原複盤",
+    historySearchPlaceholder: "按企業名、代碼或日期篩選...",
+    historyEmpty: "暫無調研歷史記錄。執行“啟動分析”後，所有時間戳、數據源及分析結果將自動歸檔。",
+    historyLoadBtn: "⚡ 恢復查看",
+    historyDeleteBtn: "🗑️ 刪除",
+    historyExportAll: "📥 匯出全部 (JSON)",
+    historyClearAll: "🗑️ 清空歷史",
+    historyClearConfirm: "確定要清空所有已保存的投研歷史記錄嗎？此操作無法撤銷。",
+    historyBannerNotice: "📂 正在查看歷史調研存檔",
+    historyBannerRerun: "⚡ 重新發起即時調研",
+    historyExportSingleBtn: "保存JSON",
+
+    // Live Analyzing Overlay
+    analyzingBadge: "自律型 ReAct 推理執行中...",
+    analyzingTargetPrefix: "調查目標企業:",
+    analyzingStepPrefix: "當前分析階段:",
+    analyzingFeedLabel: "即時執行狀態",
+    analyzingSourcesTitle: "📡 調取數據源與技能:"
   },
 
   fr: {
@@ -761,7 +849,29 @@ const I18N_DICTIONARY = {
     lblModelSelect: "Modèle Gemini:",
     lblCustomModel: "Identifiant de modèle personnalisé:",
     lblApiKey: "Clé API Gemini (Google AI Studio):",
-    btnSaveSettings: "Enregistrer"
+    btnSaveSettings: "Enregistrer",
+
+    // History & Audit Trail Archive
+    historyBtnLabel: "Historique",
+    historyModalTitle: "📜 Historique & Traçabilité d'Audit",
+    historyModalSubtitle: "Traçabilité complète des dates d'analyse, sources de données et modèles mobilisés.",
+    historySearchPlaceholder: "Filtrer par entreprise, symbole, date...",
+    historyEmpty: "Aucun historique disponible. Lancez une analyse pour enregistrer automatiquement la session.",
+    historyLoadBtn: "⚡ Restaurer / Voir",
+    historyDeleteBtn: "🗑️ Supprimer",
+    historyExportAll: "📥 Exporter Tout (JSON)",
+    historyClearAll: "🗑️ Tout Effacer",
+    historyClearConfirm: "Voulez-vous vraiment effacer tout l'historique des analyses enregistrées ?",
+    historyBannerNotice: "📂 Affichage d'une archive d'analyse historique",
+    historyBannerRerun: "⚡ Relancer l'analyse en direct",
+    historyExportSingleBtn: "Export JSON",
+
+    // Live Analyzing Overlay
+    analyzingBadge: "MOTEUR ReAct AUTONOME ACTIF...",
+    analyzingTargetPrefix: "Entreprise cible:",
+    analyzingStepPrefix: "Étape en cours:",
+    analyzingFeedLabel: "Statut d'Exécution en Direct",
+    analyzingSourcesTitle: "📡 Sources de Données & Compétences:"
   }
 };
 

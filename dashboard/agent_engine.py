@@ -2694,6 +2694,9 @@ Return ONLY a valid JSON object strictly matching this schema without any markdo
 
         ccc_str = f"{latest['ccc']:.1f} Days" if lang in ["en", "fr"] else (f"{latest['ccc']:.1f}天" if lang in ["zh-CN", "zh-TW"] else f"{latest['ccc']:.1f}日") if latest['ccc'] else "-"
 
+        import datetime
+        timestamp_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
         full_payload = {
             "type": "final_report",
             "meta": {
@@ -2702,7 +2705,21 @@ Return ONLY a valid JSON object strictly matching this schema without any markdo
                 "currency": target_info.get("currency", "USD"),
                 "standard": target_info.get("standard", "IFRS"),
                 "sector": target_info.get("sector", "General Corporate"),
-                "health_score": health_score
+                "health_score": health_score,
+                "sources": market_sources,
+                "model": self.model,
+                "timestamp": timestamp_str,
+                "tools_used": [
+                    "retrieve_primary_disclosures",
+                    "financial_calc.py",
+                    "benchmark_peers",
+                    "evaluate_risk_matrix",
+                    "build_a_to_h_report"
+                ],
+                "skills_used": [
+                    "corporate-finance-analyst",
+                    "financial_calc.py"
+                ]
             },
             "kpis": {
                 "revenue": f"{target_info['periods'][-1].revenue:,.1f}",

@@ -99,6 +99,13 @@
           </div>
         </div>
 
+        <!-- History Archive Button -->
+        <button id="historyModalBtn" class="btn-history-pill" data-i18n-title="historyBtnLabel" title="過去の調査履歴・監査トレースを確認">
+          <span class="history-icon">📜</span>
+          <span class="history-label" data-i18n="historyBtnLabel">履歴</span>
+          <span class="history-badge" id="historyCountBadge">0</span>
+        </button>
+
         <!-- Model Badge -->
         <button id="modelBadgeBtn" class="btn-model-badge" title="Click to Change Gemini Model">
           <span class="model-icon">🤖</span>
@@ -214,6 +221,108 @@
 
     <!-- Right Column: Financial Intelligence Dashboard -->
     <section class="intelligence-panel" id="intelligencePanel">
+      <!-- Historical Session Active Notification Banner -->
+      <div class="historical-notice-banner" id="historicalNoticeBanner" style="display: none;">
+        <div class="banner-left">
+          <span class="banner-icon">📂</span>
+          <div class="banner-text-group">
+            <span class="banner-title" id="historicalBannerTitle">過去の調査アーカイブを表示中</span>
+            <span class="banner-meta" id="historicalBannerMeta">記録日時: 2026-09-27 18:25:34 | Model: gemini-2.5-flash</span>
+          </div>
+        </div>
+        <button type="button" class="btn-banner-rerun" id="historicalBannerRerunBtn" title="最新情報でライブ再調査を実行">
+          <span class="rerun-icon">⚡</span>
+          <span data-i18n="historyBannerRerun">最新情報で再調査</span>
+        </button>
+      </div>
+
+      <!-- Autonomous ReAct Agent Live Analyzing Overlay (No Stale Data) -->
+      <div class="analyzing-overlay" id="analyzingOverlay" style="display: none;">
+        <div class="analyzing-card">
+          <div class="analyzing-header">
+            <div class="analyzing-radar">
+              <div class="radar-circle"></div>
+              <div class="radar-scan"></div>
+              <span class="radar-icon">⚡</span>
+            </div>
+            <div class="analyzing-info">
+              <div class="analyzing-pill">
+                <span class="pulse-dot"></span>
+                <span data-i18n="analyzingBadge">AUTONOMOUS ReAct AGENT RUNNING</span>
+              </div>
+              <h2 class="analyzing-target" id="analyzingTargetName">Investigating...</h2>
+              <p class="analyzing-desc" id="analyzingDescText">法定開示および公式市場データを起点とし、確定財務三表・決定論的デュポン指標・競合比較・リスク評価を自律的に遂行しています。</p>
+            </div>
+          </div>
+
+          <!-- 5-Step Pipeline Progress Tracker -->
+          <div class="analyzing-pipeline" id="analyzingPipeline">
+            <div class="pipe-step active" data-step="1" id="pipeStep1">
+              <div class="pipe-num">1</div>
+              <div class="pipe-body">
+                <div class="pipe-label">一次情報・開示取得</div>
+                <div class="pipe-sub">EDINET / SEC / HKEX</div>
+              </div>
+            </div>
+            <div class="pipe-connector"></div>
+            <div class="pipe-step" data-step="2" id="pipeStep2">
+              <div class="pipe-num">2</div>
+              <div class="pipe-body">
+                <div class="pipe-label">決定論的指標計算</div>
+                <div class="pipe-sub">DuPont & CCC & ROIC</div>
+              </div>
+            </div>
+            <div class="pipe-connector"></div>
+            <div class="pipe-step" data-step="3" id="pipeStep3">
+              <div class="pipe-num">3</div>
+              <div class="pipe-body">
+                <div class="pipe-label">競合ベンチマーク</div>
+                <div class="pipe-sub">Peer Matrix 比較</div>
+              </div>
+            </div>
+            <div class="pipe-connector"></div>
+            <div class="pipe-step" data-step="4" id="pipeStep4">
+              <div class="pipe-num">4</div>
+              <div class="pipe-body">
+                <div class="pipe-label">早期警戒・リスク</div>
+                <div class="pipe-sub">EWI & 健全性評価</div>
+              </div>
+            </div>
+            <div class="pipe-connector"></div>
+            <div class="pipe-step" data-step="5" id="pipeStep5">
+              <div class="pipe-num">5</div>
+              <div class="pipe-body">
+                <div class="pipe-label">A〜H 機関レポート</div>
+                <div class="pipe-sub">完全レポート統合</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Live Execution Snippet Box -->
+          <div class="analyzing-live-box">
+            <div class="live-box-top">
+              <div class="live-tag">
+                <span class="live-blink-dot"></span>
+                <span id="analyzingFeedLabel" data-i18n="analyzingFeedLabel">Live Execution Status</span>
+              </div>
+              <div class="live-model-tag" id="analyzingModelLabel">gemini-2.5-flash</div>
+            </div>
+            <div class="live-box-step" id="analyzingCurrentStepText">Step 1/5: 調査計画・一次情報アクセス戦略の策定</div>
+            <div class="live-box-snippet" id="analyzingCurrentSnippet">対象企業の一次法定開示およびリアルタイム市場データセットをアクセス・スキャン中...</div>
+          </div>
+
+          <!-- Data Sources Scanned Bar -->
+          <div class="analyzing-sources-row">
+            <span class="sources-title" data-i18n="analyzingSourcesTitle">📡 照会データソース & 実行スキル:</span>
+            <div class="sources-chips" id="analyzingSourcesChips">
+              <span class="src-chip">SEC EDGAR / HKEXnews / EDINET / Cninfo</span>
+              <span class="src-chip">Yahoo Finance Global API</span>
+              <span class="src-chip">scripts/financial_calc.py</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Target Company Header Profile -->
       <div class="company-profile-card" id="companyProfileCard">
         <div class="profile-main">
@@ -735,6 +844,45 @@
       </div>
       <div class="modal-footer">
         <button id="saveApiKeyBtn" class="btn-primary" data-i18n="btnSaveSettings">Save Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Research History & Audit Trail Modal Archive -->
+  <div class="modal-overlay" id="historyModal">
+    <div class="modal-card modal-card-wide history-modal-card">
+      <div class="modal-header">
+        <div class="modal-header-titles">
+          <div class="modal-pill-tag">AUDIT TRAIL ARCHIVE</div>
+          <h3 data-i18n="historyModalTitle">📜 投資調査履歴 & 監査アーカイブ</h3>
+          <p class="modal-subtitle" data-i18n="historyModalSubtitle">いつ・何のデータソース・どのモデル/スキルで分析したかを完全記録</p>
+        </div>
+        <button id="closeHistoryModalBtn" class="btn-close">×</button>
+      </div>
+
+      <div class="modal-body history-modal-body">
+        <!-- History Action & Filter Toolbar -->
+        <div class="history-toolbar">
+          <div class="history-search-wrap">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="historySearchInput" placeholder="企業名・ティッカー・日付で絞り込み..." data-i18n-placeholder="historySearchPlaceholder">
+          </div>
+          <div class="history-global-actions">
+            <button type="button" class="btn-history-tool" id="exportAllHistoryBtn" title="全件JSONエクスポート">
+              <span class="tool-icon">📥</span>
+              <span data-i18n="historyExportAll">全履歴エクスポート (JSON)</span>
+            </button>
+            <button type="button" class="btn-history-tool danger" id="clearAllHistoryBtn" title="全履歴を消去">
+              <span class="tool-icon">🗑️</span>
+              <span data-i18n="historyClearAll">全件クリア</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- History Records Container -->
+        <div class="history-items-list" id="historyItemsList">
+          <!-- Dynamically populated or empty state -->
+        </div>
       </div>
     </div>
   </div>
