@@ -37,14 +37,23 @@
         <button type="button" class="preset-chip active" data-company="lenovo" id="presetLenovo">
           <span class="chip-dot"></span> Lenovo (0992.HK)
         </button>
+        <button type="button" class="preset-chip" data-company="demingli" id="presetDemingli">
+          <span class="chip-dot"></span> 德明利 (001309.SZ)
+        </button>
+        <button type="button" class="preset-chip" data-company="tencent" id="presetTencent">
+          <span class="chip-dot"></span> Tencent (0700.HK)
+        </button>
+        <button type="button" class="preset-chip" data-company="samsung" id="presetSamsung">
+          <span class="chip-dot"></span> Samsung (005930.KS)
+        </button>
+        <button type="button" class="preset-chip" data-company="alibaba" id="presetAlibaba">
+          <span class="chip-dot"></span> Alibaba (9988.HK)
+        </button>
         <button type="button" class="preset-chip" data-company="toyota" id="presetToyota">
           <span class="chip-dot"></span> Toyota (7203.T)
         </button>
         <button type="button" class="preset-chip" data-company="tesla" id="presetTesla">
           <span class="chip-dot"></span> Tesla (TSLA)
-        </button>
-        <button type="button" class="preset-chip" data-company="honda" id="presetHonda">
-          <span class="chip-dot"></span> Honda (7267.T)
         </button>
         <button type="button" class="preset-chip" data-company="sony" id="presetSony">
           <span class="chip-dot"></span> Sony (6758.T)
@@ -55,7 +64,7 @@
       </div>
 
       <div class="search-container">
-        <input type="text" id="companyInput" placeholder="企業名またはティッカーを入力 (例: Lenovo, Apple, トヨタ)..." data-i18n-placeholder="searchPlaceholder" value="Lenovo">
+        <input type="text" id="companyInput" placeholder="企業名またはティッカーを入力 (例: 德明利, Tencent, Samsung, Alibaba, 001309.SZ, 0700.HK, TSLA)..." data-i18n-placeholder="searchPlaceholder" value="Lenovo">
         <button id="runAnalysisBtn" class="btn-primary">
           <span class="btn-icon">▶</span>
           <span data-i18n="runReActBtn">Run ReAct</span>
@@ -684,7 +693,7 @@
 
         <div class="input-field" id="customModelField" style="display: none; margin-bottom: 14px;">
           <label for="customModelInput" data-i18n="lblCustomModel">カスタムモデル名 (Model Identifier):</label>
-          <input type="text" id="customModelInput" placeholder="e.g. gemini-3.8-flash, gemini-experimental...">
+          <input type="text" id="customModelInput" placeholder="e.g. gemini-2.5-flash, gemini-2.5-pro, gemini-2.0-flash...">
         </div>
       </div>
       <div class="modal-footer">

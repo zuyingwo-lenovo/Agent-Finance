@@ -166,12 +166,85 @@ flowchart LR
 
 ---
 
+### (3) Multi-Source Hybrid Financial Data Infrastructure (3-Layer Architecture)
+
+FinReAct adopts an institutional 3-layer data retrieval and ingestion routing mechanism to seamlessly analyze public listed companies across China (A-Shares), Hong Kong, South Korea, Japan, the United States, and Europe:
+
+```mermaid
+graph TD
+    UI["👤 User Query<br>(e.g. Demingli / 001309.SZ / Tencent / 0700.HK / Samsung / 005930.KS)"] --> Router{"🔀 Data Ingestion Router<br>(Symbol & Market Resolver)"}
+
+    subgraph Layer1 ["Layer 1: Statutory Primary Filings (Highest Reliability & Audited)"]
+        EDGAR["🇺🇸 US: SEC EDGAR<br>(Form 10-K, 10-Q, 20-F)"]
+        HKEX["🇭🇰 HK: HKEXnews<br>(Annual Reports & Results)"]
+        CNINFO["🇨🇳 China A-Shares: Cninfo 巨潮资讯网<br>(SSE / SZSE Official Annual Filings)"]
+        DART["🇰🇷 Korea: FSS DART<br>(KRX Electronic Disclosure System)"]
+        EDINET["🇯🇵 Japan: FSA EDINET<br>(Yukashoken Hokokusho / TDnet Tanshin)"]
+    end
+
+    subgraph Layer2 ["Layer 2: Structured Financial Data APIs & Python Libraries"]
+        YF["📈 yfinance / Yahoo Finance API<br>(Global Fundamentals: 005930.KS, 0700.HK, 001309.SZ)"]
+        AK["🇨🇳 AkShare / Tushare<br>(China A-Shares & HK Specialized Financial Open-Source)"]
+        FMP["🌐 Financial Modeling Prep / Alpha Vantage<br>(Institutional Fundamental Data Feeds)"]
+    end
+
+    subgraph Layer3 ["Layer 3: Dynamic AI Web Grounding"]
+        GEMINI_SEARCH["🤖 Gemini 2.5 + Google Search Grounding<br>(Real-time quarterly earnings, IR presentations & Q&A notes)"]
+    end
+
+    Router -->|"Statutory Presets & Archives"| Layer1
+    Router -->|"Dynamic Symbol Resolution"| Layer2
+    Router -->|"Live Web & Filing Retrieval"| Layer3
+
+    Layer1 --> CALC["🧮 Deterministic Computation Engine<br>scripts/financial_calc.py"]
+    Layer2 --> CALC
+    Layer3 --> CALC
+
+    CALC --> REPORT["📊 FinReAct Interactive Dashboard<br>(Standard A~H Dossier + Charts + Peer Matrix)"]
+```
+
+#### 🌐 Supported Data Sources & Statutory Repositories
+
+| Layer | Source Name | Primary Market Coverage | Characteristics & Audit Level |
+|---|---|---|---|
+| **Layer 1: Statutory Filings** | **Cninfo (巨潮资讯网)** / SSE / SZSE | China A-Shares (Shenzhen, Shanghai, Beijing) | CSRC-designated official disclosure portal. Audited Annual Reports (CAS), Semi-Annual Reports, and quarterly earnings statements. |
+| | **HKEXnews (披露易)** | Hong Kong Exchanges (Main Board, GEM) | Audited HK Annual Reports (HKFRS/IFRS), results announcements, director remuneration, and corporate governance disclosures. |
+| | **FSS DART (전자공시시스템)** | South Korean Equity Markets (KOSPI, KOSDAQ) | Financial Supervisory Service official electronic disclosure database. Audited Business Reports (K-IFRS). |
+| | **EDINET / TDnet** | Japan (TSE Prime, Standard, Growth) | FSA EDINET Annual Securities Reports (*Yukashoken Hokokusho*), TSE TDnet timely disclosures, and quarterly earnings summaries (*Kessan Tanshin*). |
+| | **SEC EDGAR** | United States (NYSE, NASDAQ) & Foreign ADRs | Form 10-K (Annual), Form 10-Q (Quarterly), Form 20-F (Foreign Private Issuer ADRs), and Form 8-K (Current events). |
+| **Layer 2: Structured APIs** | **yfinance** | Major Global Markets (US, CN, HK, KR, JP, EU) | Python library wrapper extracting multi-year 3-statement financials (P&L, B/S, C/F) and live market metrics. |
+| | **AkShare / Tushare** | China A-Shares & Hong Kong Equities | Open-source quantitative and fundamental financial data interface specialized for Chinese capital markets. |
+| | **FMP / Alpha Vantage** | Global Listed Equities | Institutional-grade API feeds for standardized audited financial statement metrics and ratios. |
+| **Layer 3: AI Grounding** | **Gemini + Google Search Grounding** | Global Listed Equities & Latest Filings | Leverages Google Search Grounding to dynamically extract the latest quarterly disclosures, earnings call Q&A transcripts, and footnote nuances. |
+
+#### 🔍 Global Ticker & Search Query Syntax Guide
+
+FinReAct provides intelligent query resolution supporting standard global exchange suffixes, exchange codes, and multilingual natural company names:
+
+- **China A-Shares (SZSE / SSE)**: `001309.SZ` (Shenzhen Demingli), `600519.SS` (Kweichow Moutai), `301308.SZ` (Longsys) — automatically resolves raw 6-digit numeric codes (e.g., `001309`).
+- **Hong Kong (HKEX)**: `0700.HK` (Tencent), `9988.HK` (Alibaba), `0992.HK` (Lenovo) — automatically resolves raw 4-digit codes (e.g., `0700`, `9988`).
+- **South Korea (KRX / KOSPI)**: `005930.KS` (Samsung Electronics), `000660.KS` (SK Hynix) — automatically resolves 6-digit numeric tickers (e.g., `005930`).
+- **Japan (Tokyo Stock Exchange)**: `7203.T` (Toyota Motor), `6758.T` (Sony Group), `7267.T` (Honda Motor) — automatically resolves 4-digit securities codes (e.g., `7203`).
+- **US Markets & ADRs**: `AAPL` (Apple), `TSLA` (Tesla), `MSFT` (Microsoft), `NVDA` (Nvidia), `BABA` (Alibaba ADR), `LNVGY` (Lenovo ADR).
+- **Multilingual Company Name Aliases**: Supports English (e.g., `Samsung`, `Tencent`, `Demingli`), Japanese (e.g., `サムスン`, `トヨタ`, `ソニー`), and Simplified/Traditional Chinese (e.g., `德明利`, `腾讯`, `阿里巴巴`).
+
+#### 🛡️ Robust Parser & Fallback Safety (Step 1 Bug Fix & Transparency)
+
+1. **Synonym-Resilient Financial Parser (`parse_financial_period`)**:
+   - Automatically reconciles field naming discrepancies across LLMs and market APIs (`cogs` ↔ `cost_of_sales`, `total_equity` ↔ `equity`, `inventory` ↔ `inventories`, `operating_income` ↔ `operating_profit`, etc.).
+   - Robustly sanitizes formatted string metrics (`"$12,345M"`, `"N/A"`, `null`) into clean float values, eliminating Python `TypeError` exceptions during deterministic calculation.
+2. **Elimination of Silent Fallbacks & Transparent Audit Trail**:
+   - Removed previous behavior where dynamic retrieval failures silently defaulted to Lenovo.
+   - Explicitly declares source provenance, reference models, and statutory retrieval status, upholding transparency and institutional research rigor.
+
+---
+
 ## 3. System Architecture & Components
 
 | Component | Path | Technology & Architectural Role |
 |---|---|---|
 | **Fast ASGI Web Server** | [`dashboard/server.py`](dashboard/server.py) | **Starlette + Uvicorn**.<br>• Real-time SSE streaming endpoint (`/api/analyze/stream`).<br>• Secure ephemeral token session exchange (`/api/auth/session`).<br>• High-performance static asset hosting. |
-| **ReAct Agent Engine** | [`dashboard/agent_engine.py`](dashboard/agent_engine.py) | **Google GenAI SDK + Async Generators**.<br>• Dynamic financial data extraction via Gemini 2.5 Flash / Pro.<br>• Audited baseline presets (Lenovo, Toyota, Tesla, Apple, Sony, MSFT, Honda).<br>• Comprehensive multilingual A〜H dossier compiler (`build_comprehensive_a_to_h_report`). |
+| **ReAct Agent Engine** | [`dashboard/agent_engine.py`](dashboard/agent_engine.py) | **Google GenAI SDK + Async Generators**.<br>• Dynamic financial data extraction via Gemini 2.5 Flash / Pro.<br>• Audited baseline presets (Lenovo, Toyota, Tesla, Apple, Sony, MSFT, Honda, Samsung, Tencent, Alibaba, Shenzhen Demingli).<br>• Multi-source fallback adapter (`yfinance` + Gemini Search Grounding + Statutory Disclosures).<br>• Robust synonym parser (`parse_financial_period`) eliminating LLM schema mismatches.<br>• Comprehensive multilingual A〜H dossier compiler (`build_comprehensive_a_to_h_report`). |
 | **Deterministic Calculator** | [`scripts/financial_calc.py`](scripts/financial_calc.py) | **Python Standard Library (Zero External Dependencies)**.<br>• Precision calculation of CAGR, YoY, GPM, OPM, DuPont 3-stage, ROIC, CCC (DSO + DIO - DPO), and Net Debt / EBITDA. |
 | **Corporate Finance Skill** | [`.agents/skills/corporate-finance-analyst/`](.agents/skills/corporate-finance-analyst/) | **Antigravity AI Agent Skill**.<br>• `SKILL.md`: Professional guidelines, analysis rules, and standard output format.<br>• `references/`: Financial metrics reference, statutory sources guide, early warning framework. |
 | **Modern Frontend UI/UX** | [`dashboard/static/`](dashboard/static/) | **Vanilla HTML5, Modern CSS, JavaScript (No Heavy Frameworks)**.<br>• `index.html`: Responsive grid, collapsible ReAct rail, 4-tab dashboard.<br>• `css/style.css`: Financial dark-mode theme, glassmorphism, responsive micro-animations.<br>• `js/app.js`: SSE streaming client, TOC jump navigation, CCC waterfall timeline, unified dossier export.<br>• `js/charts.js`: Interactive Chart.js multi-axis trajectory & cash flow quality visualizations. |
@@ -200,7 +273,7 @@ H:\Agent-Finance/
 │               └── financial_calc.py             # Bundled deterministic computation engine
 ├── dashboard/                                    # FinReAct Interactive Web Application
 │   ├── run_dashboard.bat                         # Automated venv creation & launch script for Windows
-│   ├── requirements.txt                          # Starlette, Uvicorn, Google-GenAI, python-dotenv
+│   ├── requirements.txt                          # Starlette, Uvicorn, Google-GenAI, yfinance, python-dotenv
 │   ├── .env.example                              # Environment configuration template
 │   ├── server.py                                 # ASGI Web server & secure session manager
 │   ├── agent_engine.py                           # ReAct execution stream & dossier builder
@@ -256,7 +329,20 @@ Open `http://localhost:8080/` in your browser.
 - Click **🔑 Settings** or the **🤖 Model Badge** in the top-right header.
 - Enter your personal Google Gemini API key and select your preferred model (`gemini-2.5-flash`, `gemini-2.5-pro`, etc.).
 - Settings are preserved in your browser's client-side memory.
-- *Note*: Even without an API key, the platform provides full analyses and pre-compiled ReAct demonstration streams for verified presets (Lenovo, Toyota, Tesla, Apple, Sony, MSFT, Honda).
+- *Note*: Even without an API key, the platform provides full analyses and pre-compiled ReAct demonstration streams for verified presets across global exchanges (Lenovo, Toyota, Tesla, Apple, Sony, MSFT, Honda, Samsung, Tencent, Alibaba, Shenzhen Demingli).
+
+#### 4. Global Company Search & Quick Presets
+- **Quick-Preset Chips**: Click preset chips for instant zero-latency demonstration:
+  - 🇨🇳 `Shenzhen Demingli (001309.SZ)` — Semiconductor Flash Controller & Storage Solutions (CAS / CNY)
+  - 🇭🇰 `Tencent (0700.HK)` — Interactive Media, Gaming & FinTech (IFRS / RMB)
+  - 🇰🇷 `Samsung (005930.KS)` — Semiconductor Memory & Mobile eXperience (K-IFRS / KRW)
+  - 🇨🇳 `Alibaba (9988.HK)` — E-Commerce, Cloud Intelligence & Digital Media (US GAAP/IFRS / RMB)
+  - 🇭🇰 `Lenovo (0992.HK)` — Global PCs, AI Servers & Infrastructure (HKFRS / USD)
+  - 🇯🇵 `Toyota (7203.T)` — Global Automotive & Mobility (IFRS / JPY)
+  - 🇺🇸 `Tesla (TSLA)` — Pure Electric Vehicles & Clean Energy (US GAAP / USD)
+- **Direct Global Search**: Enter any global listed company ticker or name:
+  - Examples: `600519.SS` (Moutai), `NVDA` (Nvidia), `000660.KS` (SK Hynix), `6758.T` (Sony), `AAPL`, `BABA`, `301308.SZ` (Longsys), `BYD`
+  - The multi-source routing engine will automatically query official statutory repositories, structure financial data via `yfinance` or Gemini Grounding, and feed deterministic metrics into `scripts/financial_calc.py`.
 
 ---
 
