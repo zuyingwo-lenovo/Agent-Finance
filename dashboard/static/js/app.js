@@ -509,6 +509,13 @@ document.addEventListener('DOMContentLoaded', () => {
         html = html.replace(/<h2(.*?)>G\.\s*(.*?)<\/h2>/gi, '<h2 id="sec-g"$1>G. $2</h2>');
         html = html.replace(/<h2(.*?)>H\.\s*(.*?)<\/h2>/gi, '<h2 id="sec-h"$1>H. $2</h2>');
         reportMarkdownContainer.innerHTML = html;
+        reportMarkdownContainer.querySelectorAll('table').forEach(tbl => {
+          const colCount = tbl.querySelector('tr')?.children.length || 0;
+          tbl.classList.add(`cols-${colCount}`);
+          if (colCount >= 6) {
+            tbl.classList.add('table-compact');
+          }
+        });
       } else {
         reportMarkdownContainer.textContent = data.report_markdown;
       }
@@ -1134,18 +1141,35 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       `;
 
+      // 対策2: 列数クラス（cols-N）の付与および多列テーブル（6列以上）の自動コンパクト化
+      pdfContainer.querySelectorAll('table').forEach(tbl => {
+        const colCount = tbl.querySelector('tr')?.children.length || 0;
+        tbl.classList.add(`cols-${colCount}`);
+        if (colCount >= 6) {
+          tbl.classList.add('table-compact');
+        }
+      });
+
       document.body.appendChild(pdfContainer);
 
       const safeFilename = `FinReAct_Executive_Report_${companyName.replace(/[^a-zA-Z0-9\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF]/g, '_')}_${Date.now()}.pdf`;
 
       if (typeof html2pdf !== 'undefined') {
         const opt = {
-          margin: [10, 12, 12, 12],
+          margin: [10, 12, 14, 12],
           filename: safeFilename,
           image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+          html2canvas: {
+            scale: 2,
+            useCORS: true,
+            letterRendering: true,
+            scrollY: 0
+          },
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-          pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+          pagebreak: { 
+            mode: ['css', 'legacy'],
+            avoid: ['.pdf-footer', 'tr', '.pdf-react-card', '.pdf-calculation-box']
+          }
         };
 
         await html2pdf().set(opt).from(pdfContainer).save();
@@ -1327,18 +1351,35 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       `;
 
+      // 対策2: 列数クラス（cols-N）の付与および多列テーブル（6列以上）の自動コンパクト化
+      pdfContainer.querySelectorAll('table').forEach(tbl => {
+        const colCount = tbl.querySelector('tr')?.children.length || 0;
+        tbl.classList.add(`cols-${colCount}`);
+        if (colCount >= 6) {
+          tbl.classList.add('table-compact');
+        }
+      });
+
       document.body.appendChild(pdfContainer);
 
       const safeFilename = `FinReAct_Full_Dossier_${companyName.replace(/[^a-zA-Z0-9\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF]/g, '_')}_${Date.now()}.pdf`;
 
       if (typeof html2pdf !== 'undefined') {
         const opt = {
-          margin: [10, 12, 12, 12],
+          margin: [10, 12, 14, 12],
           filename: safeFilename,
           image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+          html2canvas: {
+            scale: 2,
+            useCORS: true,
+            letterRendering: true,
+            scrollY: 0
+          },
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-          pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+          pagebreak: { 
+            mode: ['css', 'legacy'],
+            avoid: ['.pdf-footer', 'tr', '.pdf-react-card', '.pdf-calculation-box']
+          }
         };
 
         await html2pdf().set(opt).from(pdfContainer).save();

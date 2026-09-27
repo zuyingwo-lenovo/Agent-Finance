@@ -256,15 +256,31 @@ class FinancialAnalyzer:
         }
         T = titles[lang]
 
+        # 対策5: PDF表示年数を最大5期（直近5年分）に制限
+        max_periods = 5
+        display_periods = self.periods[-max_periods:]
+        display_results = results[-max_periods:]
+
         lines = []
         lines.append(T["highlights"])
-        lines.append(T["highlights_sub"])
+        if len(self.periods) > max_periods:
+            sub_notes = {
+                "ja": f"*対象通貨: {currency} | 会計基準: {standard} | 表示: 直近{max_periods}期推移 | 数値丸め: 四捨五入*",
+                "en": f"*Reporting Currency: {currency} | Accounting Standard: {standard} | Display: Latest {max_periods} Fiscal Years | Rounding: Rounded*",
+                "zh-CN": f"*报告货币: {currency} | 会计准则: {standard} | 显示: 最近{max_periods}个财年 | 舍入方式: 四舍五入*",
+                "zh-TW": f"*報告貨幣: {currency} | 會計準則: {standard} | 顯示: 最近{max_periods}個財年 | 捨入方式: 四捨五入*",
+                "fr": f"*Devise: {currency} | Norme Comptable: {standard} | Affichage: {max_periods} derniers exercices | Arrondi: Standard*"
+            }
+            lines.append(sub_notes.get(lang, T["highlights_sub"]))
+        else:
+            lines.append(T["highlights_sub"])
         lines.append("")
 
         # Financial Highlights Table
-        headers = [T["h_metric"], T["h_def"]] + [r["period_name"] for r in results] + [T["h_yoy"], T["h_cagr"]]
+        # 対策1: 「定義 / 式」列を独立列から削除し、指標名セルのサブテキストに集約
+        headers = [T["h_metric"]] + [r["period_name"] for r in display_results] + [T["h_yoy"], T["h_cagr"]]
         lines.append("| " + " | ".join(headers) + " |")
-        lines.append("|" + "|".join(["---" if i < 2 else "---:" for i in range(len(headers))]) + "|")
+        lines.append("|" + "|".join(["---" if i == 0 else "---:" for i in range(len(headers))]) + "|")
 
         raw_metrics_dict = {
             "ja": [
@@ -336,10 +352,12 @@ class FinancialAnalyzer:
         raw_metrics = raw_metrics_dict[lang]
 
         for label, formula, key, is_raw in raw_metrics:
-            row = [label, formula]
+            # 対策1: 指標セル内に定義・算出式をサブテキストとして埋め込み
+            metric_cell = f"{label}<br><span style='font-size:0.82em;color:#64748b;font-weight:normal;'>{formula}</span>"
+            row = [metric_cell]
             vals = []
-            for i, p in enumerate(self.periods):
-                val = getattr(p, key) if is_raw else results[i].get(key)
+            for i, p in enumerate(display_periods):
+                val = getattr(p, key) if is_raw else display_results[i].get(key)
                 vals.append(val)
                 row.append(f"{val:,.1f}" if val is not None else "-")
 
@@ -363,7 +381,8 @@ class FinancialAnalyzer:
         lines.append(T["ratios"])
         lines.append("")
 
-        ratio_headers = [T["r_cat"], T["r_name"], T["r_val"], T["r_diff"], T["r_trend"], T["r_eval"], T["r_formula"]]
+        # 対策1: 指標セル内に算出式・注記をサブテキストとして集約し、独立した定義列を廃止（7列→6列へスリム化）
+        ratio_headers = [T["r_cat"], T["r_name"], T["r_val"], T["r_diff"], T["r_trend"], T["r_eval"]]
         lines.append("| " + " | ".join(ratio_headers) + " |")
         lines.append("|" + "|".join(["---" if i not in (2, 3) else "---:" for i in range(len(ratio_headers))]) + "|")
 
@@ -569,7 +588,9 @@ class FinancialAnalyzer:
                 else:
                     trend_str = T["t_stable"]
 
-            row = [cat, name, val_str, diff_str, trend_str, eval_desc, formula_note]
+            # 対策1: 指標セル内に算出式・注記をサブテキストとして埋め込み
+            name_cell = f"{name}<br><span style='font-size:0.82em;color:#64748b;font-weight:normal;'>{formula_note}</span>"
+            row = [cat, name_cell, val_str, diff_str, trend_str, eval_desc]
             lines.append("| " + " | ".join(row) + " |")
 
         # DuPont Breakdown Section
