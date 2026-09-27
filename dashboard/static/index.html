@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FinReAct Intelligence | Gemini-Powered Corporate Finance Dashboard</title>
+  <meta name="description" content="Gemini LLMによるReAct（Reasoning + Acting）推論プロセスをリアルタイム可視化する企業財務調査・分析ダッシュボード">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Chart.js & Marked.js & html2pdf.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="/static/css/style.css?v=2.5.0">
+</head>
+<body class="theme-dark">
+  <!-- Top Navigation Container (Two-Tier Institutional Architecture) -->
+  <div class="top-nav-container" id="topNavContainer">
+    <!-- Tier 1: Global Branding, Central Command Search & System Controls -->
+    <header class="app-header" id="appHeader">
+      <div class="header-left">
+        <div class="brand-logo">
+          <span class="logo-icon">⚡</span>
+          <div class="brand-text-wrap">
+            <span class="logo-text">Fin<span class="gradient-text">ReAct</span></span>
+            <span class="version-tag">Agentic AI v2.5</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Center: Wide Command-Bar Style Search -->
+      <div class="header-center">
+        <div class="search-command-bar">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="companyInput" placeholder="企業名またはティッカー (例: 7974, 任天堂, Toyota, 002594.SZ, TSMC, NVDA)..." data-i18n-placeholder="searchPlaceholder" value="Toyota">
+          <button id="runAnalysisBtn" class="btn-primary" type="button">
+            <span class="btn-icon">▶</span>
+            <span data-i18n="runReActBtn">Run ReAct</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Right: Unified System Controls Cluster (Never Overflows) -->
+      <div class="header-right">
+        <div class="agent-status" id="agentStatusBadge">
+          <span class="status-pulse"></span>
+          <span id="statusText" data-i18n="agentReady">AGENT READY</span>
+        </div>
+
+        <!-- Multilingual Language Selector -->
+        <div class="lang-selector-wrapper" id="langSelectorWrapper">
+          <button id="langSelectBtn" class="btn-lang-select" type="button" aria-haspopup="true" aria-expanded="false" title="言語切替 / Select Language">
+            <span class="lang-icon">🌐</span>
+            <span id="activeLangLabel">🇯🇵 日本語</span>
+            <span class="lang-caret">▾</span>
+          </button>
+          <div class="lang-dropdown-menu" id="langDropdownMenu">
+            <button class="lang-option-btn active" data-lang="ja" type="button">
+              <span class="opt-flag">🇯🇵</span>
+              <div class="opt-text-wrap">
+                <span class="opt-name">日本語</span>
+                <span class="opt-sub">日本基準 / 金融庁</span>
+              </div>
+            </button>
+            <button class="lang-option-btn" data-lang="en" type="button">
+              <span class="opt-flag">🇺🇸</span>
+              <div class="opt-text-wrap">
+                <span class="opt-name">English (US)</span>
+                <span class="opt-sub">US GAAP / SEC</span>
+              </div>
+            </button>
+            <button class="lang-option-btn" data-lang="zh-CN" type="button">
+              <span class="opt-flag">🇨🇳</span>
+              <div class="opt-text-wrap">
+                <span class="opt-name">简体中文</span>
+                <span class="opt-sub">中国会计准则 / 投行</span>
+              </div>
+            </button>
+            <button class="lang-option-btn" data-lang="zh-TW" type="button">
+              <span class="opt-flag">🇭🇰</span>
+              <div class="opt-text-wrap">
+                <span class="opt-name">繁體中文</span>
+                <span class="opt-sub">港台機構投資者標準</span>
+              </div>
+            </button>
+            <button class="lang-option-btn" data-lang="fr" type="button">
+              <span class="opt-flag">🇫🇷</span>
+              <div class="opt-text-wrap">
+                <span class="opt-name">Français</span>
+                <span class="opt-sub">Normes IFRS / AMF</span>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- History Archive Button -->
+        <button id="historyModalBtn" class="btn-history-pill" data-i18n-title="historyBtnLabel" title="過去の調査履歴・監査トレースを確認">
+          <span class="history-icon">📜</span>
+          <span class="history-label" data-i18n="historyBtnLabel">履歴</span>
+          <span class="history-badge" id="historyCountBadge">0</span>
+        </button>
+
+        <!-- Model Badge -->
+        <button id="modelBadgeBtn" class="btn-model-badge" title="Click to Change Gemini Model">
+          <span class="model-icon">🤖</span>
+          <span id="activeModelLabel">gemini-2.5-flash</span>
+        </button>
+
+        <!-- API Key Settings Button -->
+        <button id="apiKeyModalBtn" class="btn-settings-pill" data-i18n-title="settingsTitle" title="Gemini API Key Settings">
+          <span class="settings-icon">🔑</span>
+          <span class="settings-label" data-i18n="settingsTitle">API Key</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Tier 2: Dedicated Benchmark Presets Ribbon -->
+    <div class="benchmark-ribbon" id="benchmarkRibbon">
+      <div class="ribbon-inner">
+        <div class="ribbon-lead">
+          <span class="ribbon-icon">⚡</span>
+          <span class="ribbon-label" data-i18n="presetsLabel">Quick Benchmarks:</span>
+        </div>
+        <div class="preset-scroll-track" id="presetScrollTrack">
+          <button type="button" class="preset-chip active" data-company="toyota" id="presetToyota">
+            <span class="chip-flag">🇯🇵</span>
+            <span class="chip-name">Toyota</span>
+            <span class="chip-ticker">7203.T</span>
+          </button>
+          <button type="button" class="preset-chip" data-company="sony" id="presetSony">
+            <span class="chip-flag">🇯🇵</span>
+            <span class="chip-name">Sony</span>
+            <span class="chip-ticker">6758.T</span>
+          </button>
+          <button type="button" class="preset-chip" data-company="tencent" id="presetTencent">
+            <span class="chip-flag">🇭🇰</span>
+            <span class="chip-name">Tencent</span>
+            <span class="chip-ticker">0700.HK</span>
+          </button>
+          <button type="button" class="preset-chip" data-company="samsung" id="presetSamsung">
+            <span class="chip-flag">🇰🇷</span>
+            <span class="chip-name">Samsung</span>
+            <span class="chip-ticker">005930.KS</span>
+          </button>
+          <button type="button" class="preset-chip" data-company="alibaba" id="presetAlibaba">
+            <span class="chip-flag">🇨🇳</span>
+            <span class="chip-name">Alibaba</span>
+            <span class="chip-ticker">9988.HK</span>
+          </button>
+          <button type="button" class="preset-chip" data-company="apple" id="presetApple">
+            <span class="chip-flag">🇺🇸</span>
+            <span class="chip-name">Apple</span>
+            <span class="chip-ticker">AAPL</span>
+          </button>
+          <button type="button" class="preset-chip" data-company="tesla" id="presetTesla">
+            <span class="chip-flag">🇺🇸</span>
+            <span class="chip-name">Tesla</span>
+            <span class="chip-ticker">TSLA</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Multi-Column Grid Layout -->
+  <main class="dashboard-grid" id="dashboardGrid">
+    <!-- Left Column: ReAct Autonomous Reasoning Stream -->
+    <section class="react-stream-panel" id="reactStreamPanel">
+      <div class="panel-header">
+        <div class="panel-title-wrapper">
+          <span class="panel-icon">🧠</span>
+          <h2 class="panel-title" data-i18n="streamTitle">ReAct Execution Stream</h2>
+          <span class="step-badge" id="stepCounter">Step 0/5</span>
+        </div>
+        <div class="stream-actions">
+          <button id="clearStreamBtn" class="btn-icon-tiny" data-i18n-title="clearStreamTitle" title="Clear Stream">⟲</button>
+          <button id="collapseStreamBtn" class="btn-icon-collapse" data-i18n="collapseStreamBtn" data-i18n-title="collapseStreamTitle" title="ストリームを折りたたむ (画面を広く使う)">◀ 畳む</button>
+        </div>
+      </div>
+
+      <!-- Collapsed Vertical Rail (Visible when stream is collapsed) -->
+      <div class="collapsed-stream-rail" id="collapsedStreamRail" data-i18n-title="expandStreamTitle" title="クリックしてReAct推論ログを展開">
+        <button class="btn-rail-expand" id="expandRailBtn" data-i18n-title="expandStreamTitle" title="ストリームを展開">▶</button>
+        <div class="rail-icon">🧠</div>
+        <div class="rail-vertical-text" data-i18n="streamTitle">ReAct Stream</div>
+        <div class="rail-step-badge" id="railStepBadge">5/5</div>
+      </div>
+      
+      <div class="stream-scroll-area" id="streamLogContainer">
+        <!-- ReAct step cards will be dynamically appended here -->
+        <div class="stream-welcome-card" id="streamWelcome">
+          <div class="welcome-icon">✨</div>
+          <h3 data-i18n="welcomeTitle">Autonomous ReAct Analyst Ready</h3>
+          <p data-i18n="welcomeDesc">「Run ReAct」をクリックすると、Gemini LLMが思考（Thought）→ ツール実行（Action）→ 観測（Observation）をリアルタイムに繰り返し、財務三表・デュポン分解・競合比較・リスク評価を自律的に遂行します。</p>
+          <div class="welcome-steps-preview">
+            <div class="preview-item" data-i18n="welcomeStep1">1. 一次情報・有報・短信取得</div>
+            <div class="preview-item" data-i18n="welcomeStep2">2. 決定論的指標・デュポン計算</div>
+            <div class="preview-item" data-i18n="welcomeStep3">3. 競合ベンチマーク比較</div>
+            <div class="preview-item" data-i18n="welcomeStep4">4. 早期警戒リスクマトリクス</div>
+            <div class="preview-item" data-i18n="welcomeStep5">5. A〜H 機関レポート統合</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Right Column: Financial Intelligence Dashboard -->
+    <section class="intelligence-panel" id="intelligencePanel">
+      <!-- Historical Session Active Notification Banner -->
+      <div class="historical-notice-banner" id="historicalNoticeBanner" style="display: none;">
+        <div class="banner-left">
+          <span class="banner-icon">📂</span>
+          <div class="banner-text-group">
+            <span class="banner-title" id="historicalBannerTitle">過去の調査アーカイブを表示中</span>
+            <span class="banner-meta" id="historicalBannerMeta">記録日時: 2026-09-27 18:25:34 | Model: gemini-2.5-flash</span>
+          </div>
+        </div>
+        <button type="button" class="btn-banner-rerun" id="historicalBannerRerunBtn" title="最新情報でライブ再調査を実行">
+          <span class="rerun-icon">⚡</span>
+          <span data-i18n="historyBannerRerun">最新情報で再調査</span>
+        </button>
+      </div>
+
+      <!-- Autonomous ReAct Agent Live Analyzing Overlay (No Stale Data) -->
+      <div class="analyzing-overlay" id="analyzingOverlay" style="display: none;">
+        <div class="analyzing-card">
+          <div class="analyzing-header">
+            <div class="analyzing-radar">
+              <div class="radar-circle"></div>
+              <div class="radar-scan"></div>
+              <span class="radar-icon">⚡</span>
+            </div>
+            <div class="analyzing-info">
+              <div class="analyzing-pill">
+                <span class="pulse-dot"></span>
+                <span data-i18n="analyzingBadge">AUTONOMOUS ReAct AGENT RUNNING</span>
+              </div>
+              <h2 class="analyzing-target" id="analyzingTargetName">Investigating...</h2>
+              <p class="analyzing-desc" id="analyzingDescText">法定開示および公式市場データを起点とし、確定財務三表・決定論的デュポン指標・競合比較・リスク評価を自律的に遂行しています。</p>
+            </div>
+          </div>
+
+          <!-- 5-Step Pipeline Progress Tracker -->
+          <div class="analyzing-pipeline" id="analyzingPipeline">
+            <div class="pipe-step active" data-step="1" id="pipeStep1">
+              <div class="pipe-num">1</div>
+              <div class="pipe-body">
+                <div class="pipe-label">一次情報・開示取得</div>
+                <div class="pipe-sub">EDINET / SEC / HKEX</div>
+              </div>
+            </div>
+            <div class="pipe-connector"></div>
+            <div class="pipe-step" data-step="2" id="pipeStep2">
+              <div class="pipe-num">2</div>
+              <div class="pipe-body">
+                <div class="pipe-label">決定論的指標計算</div>
+                <div class="pipe-sub">DuPont & CCC & ROIC</div>
+              </div>
+            </div>
+            <div class="pipe-connector"></div>
+            <div class="pipe-step" data-step="3" id="pipeStep3">
+              <div class="pipe-num">3</div>
+              <div class="pipe-body">
+                <div class="pipe-label">競合ベンチマーク</div>
+                <div class="pipe-sub">Peer Matrix 比較</div>
+              </div>
+            </div>
+            <div class="pipe-connector"></div>
+            <div class="pipe-step" data-step="4" id="pipeStep4">
+              <div class="pipe-num">4</div>
+              <div class="pipe-body">
+                <div class="pipe-label">早期警戒・リスク</div>
+                <div class="pipe-sub">EWI & 健全性評価</div>
+              </div>
+            </div>
+            <div class="pipe-connector"></div>
+            <div class="pipe-step" data-step="5" id="pipeStep5">
+              <div class="pipe-num">5</div>
+              <div class="pipe-body">
+                <div class="pipe-label">A〜H 機関レポート</div>
+                <div class="pipe-sub">完全レポート統合</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Live Execution Snippet Box -->
+          <div class="analyzing-live-box">
+            <div class="live-box-top">
+              <div class="live-tag">
+                <span class="live-blink-dot"></span>
+                <span id="analyzingFeedLabel" data-i18n="analyzingFeedLabel">Live Execution Status</span>
+              </div>
+              <div class="live-model-tag" id="analyzingModelLabel">gemini-2.5-flash</div>
+            </div>
+            <div class="live-box-step" id="analyzingCurrentStepText">Step 1/5: 調査計画・一次情報アクセス戦略の策定</div>
+            <div class="live-box-snippet" id="analyzingCurrentSnippet">対象企業の一次法定開示およびリアルタイム市場データセットをアクセス・スキャン中...</div>
+          </div>
+
+          <!-- Data Sources Scanned Bar -->
+          <div class="analyzing-sources-row">
+            <span class="sources-title" data-i18n="analyzingSourcesTitle">📡 照会データソース & 実行スキル:</span>
+            <div class="sources-chips" id="analyzingSourcesChips">
+              <span class="src-chip">SEC EDGAR / HKEXnews / EDINET / Cninfo</span>
+              <span class="src-chip">Yahoo Finance Global API</span>
+              <span class="src-chip">scripts/financial_calc.py</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Target Company Header Profile -->
+      <div class="company-profile-card" id="companyProfileCard">
+        <div class="profile-main">
+          <div class="profile-header-line">
+            <button id="uncollapseStreamPill" class="uncollapse-stream-pill" data-i18n-title="expandStreamTitle" title="ReActストリームを展開">
+              🧠 Stream (Step 5/5) ❯
+            </button>
+            <h1 class="company-name" id="dispCompanyName">トヨタ自動車株式会社 (Toyota Motor Corporation)</h1>
+            <span class="ticker-pill" id="dispTicker">TSE: 7203 / NYSE: TM</span>
+            <span class="standard-pill" id="dispStandard">IFRS</span>
+          </div>
+          <div class="profile-sub-line">
+            <span class="sector-label" id="dispSector">Automotive & Mobility</span>
+            <span class="currency-label" id="dispCurrency">Reporting: JPY (十億円 / Billion)</span>
+          </div>
+        </div>
+
+        <div class="health-score-container">
+          <div class="score-circle" id="overallScoreCircle">
+            <span class="score-num" id="dispScore">88</span>
+            <span class="score-denom">/100</span>
+          </div>
+          <div class="score-meta">
+            <span class="score-title" data-i18n="healthScoreTitle">FINANCIAL HEALTH</span>
+            <span class="score-desc" id="scoreDesc" data-i18n="healthScoreDesc">Strong Investment Grade</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6 Key Financial Ratio Metric Cards -->
+      <div class="kpi-cards-grid" id="kpiGrid">
+        <div class="kpi-card" id="kpiRevenue">
+          <div class="kpi-top">
+            <span class="kpi-label" data-i18n="kpiRevenueLabel">LATEST REVENUE</span>
+            <span class="kpi-badge positive" id="dispRevenueYoY">+20.3% YoY</span>
+          </div>
+          <div class="kpi-value" id="dispRevenue">$83,100.0M</div>
+          <div class="kpi-footer" data-i18n="kpiRevenueFooter">AI Server & AI PC Expansion</div>
+        </div>
+
+        <div class="kpi-card" id="kpiOpm">
+          <div class="kpi-top">
+            <span class="kpi-label" data-i18n="kpiOpmLabel">OPERATING MARGIN</span>
+            <span class="kpi-badge positive" id="dispOpmDiff">+0.6 pt</span>
+          </div>
+          <div class="kpi-value" id="dispOpm">3.7%</div>
+          <div class="kpi-footer" data-i18n="kpiOpmFooter">ISG Turnaround & SSG Growth</div>
+        </div>
+
+        <div class="kpi-card" id="kpiRoe">
+          <div class="kpi-top">
+            <span class="kpi-label" data-i18n="kpiRoeLabel">ROE (DuPont)</span>
+            <span class="kpi-badge highlight" id="dispRoeBadge" data-i18n="kpiRoeBadge">High Efficiency</span>
+          </div>
+          <div class="kpi-value" id="dispRoe">24.7%</div>
+          <div class="kpi-footer" data-i18n="kpiRoeFooter">Asset Turnover & Leverage Led</div>
+        </div>
+
+        <div class="kpi-card" id="kpiRoic">
+          <div class="kpi-top">
+            <span class="kpi-label" data-i18n="kpiRoicLabel">ROIC (vs WACC)</span>
+            <span class="kpi-badge positive" id="dispRoicBadge">> WACC (8.5%)</span>
+          </div>
+          <div class="kpi-value" id="dispRoic">15.8%</div>
+          <div class="kpi-footer" data-i18n="kpiRoicFooter">Economic Value Creation</div>
+        </div>
+
+        <div class="kpi-card" id="kpiCcc">
+          <div class="kpi-top">
+            <span class="kpi-label" data-i18n="kpiCccLabel">CASH CONVERSION (CCC)</span>
+            <span class="kpi-badge success" id="dispCccBadge" data-i18n="kpiCccBadge">Near Zero</span>
+          </div>
+          <div class="kpi-value" id="dispCcc">1.8 Days</div>
+          <div class="kpi-footer" data-i18n="kpiCccFooter">Negative Working Capital Model</div>
+        </div>
+
+        <div class="kpi-card" id="kpiNetDebt">
+          <div class="kpi-top">
+            <span class="kpi-label" data-i18n="kpiNetDebtLabel">NET DEBT / EBITDA</span>
+            <span class="kpi-badge safe" id="dispDebtBadge" data-i18n="kpiNetDebtBadge">Safe (<2.0x)</span>
+          </div>
+          <div class="kpi-value" id="dispNetDebt">0.43x</div>
+          <div class="kpi-footer" data-i18n="kpiNetDebtFooter">Robust Solvency & Cash Buffers</div>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs & Unified Export Menu -->
+      <div class="tabs-header-bar">
+        <div class="dashboard-tabs">
+          <button class="tab-btn active" data-tab="tabOverview" id="btnTabOverview" data-i18n="tabOverview">📊 Overview & Charts</button>
+          <button class="tab-btn" data-tab="tabReport" id="btnTabReport" data-i18n="tabReport">📑 Full Institutional Report (A〜H)</button>
+          <button class="tab-btn" data-tab="tabBenchmark" id="btnTabBenchmark" data-i18n="tabBenchmark">⚔️ Peer Benchmark</button>
+          <button class="tab-btn" data-tab="tabRisks" id="btnTabRisks" data-i18n="tabRisks">🛡️ Risks & EWI</button>
+        </div>
+        
+        <!-- Unified Export Dropdown Component -->
+        <div class="unified-export-wrapper" id="unifiedExportWrapper">
+          <button class="btn-unified-export" id="unifiedExportBtn" type="button" aria-haspopup="true" aria-expanded="false" title="調査レポート・全データを出力">
+            <span class="export-icon">📥</span>
+            <span class="export-label" data-i18n="exportBtnLabel">Export Dossier</span>
+            <span class="export-caret">▾</span>
+          </button>
+          <div class="export-dropdown-menu" id="exportDropdownMenu">
+            <div class="dropdown-header">
+              <span data-i18n="exportMenuHeader">INVESTMENT DOSSIER EXPORTS</span>
+            </div>
+            <button class="dropdown-item" id="optExportFullPdf" type="button">
+              <span class="item-icon">📦</span>
+              <div class="item-body">
+                <div class="item-row">
+                  <span class="item-name" data-i18n="optFullPdfName">Full Dossier (PDF)</span>
+                  <span class="item-badge hot" data-i18n="optFullPdfBadge">Recommended</span>
+                </div>
+                <span class="item-desc" data-i18n="optFullPdfDesc">思考ログ・財務三表・デュポン・競合・リスク・完全報告書</span>
+              </div>
+            </button>
+            <button class="dropdown-item" id="optExportExecPdf" type="button">
+              <span class="item-icon">📄</span>
+              <div class="item-body">
+                <span class="item-name" data-i18n="optExecPdfName">Institutional Report (PDF)</span>
+                <span class="item-desc" data-i18n="optExecPdfDesc">A〜H標準規格のエグゼクティブレポート（印刷・回覧用）</span>
+              </div>
+            </button>
+            <div class="dropdown-sep"></div>
+            <button class="dropdown-item" id="optExportMd" type="button">
+              <span class="item-icon">📑</span>
+              <div class="item-body">
+                <span class="item-name" data-i18n="optMdName">Integrated Markdown (.md)</span>
+                <span class="item-desc" data-i18n="optMdDesc">全調査データと分析テキストを統合したMarkdownファイル</span>
+              </div>
+            </button>
+            <button class="dropdown-item" id="optExportJson" type="button">
+              <span class="item-icon">📊</span>
+              <div class="item-body">
+                <span class="item-name" data-i18n="optJsonName">Raw Financial Dataset (.json)</span>
+                <span class="item-desc" data-i18n="optJsonDesc">API連携・モデリング用の構造化JSON生データ</span>
+              </div>
+            </button>
+            <div class="dropdown-sep"></div>
+            <button class="dropdown-item" id="optCopyClipboard" type="button">
+              <span class="item-icon">📋</span>
+              <div class="item-body">
+                <span class="item-name" data-i18n="optCopyName">Copy Markdown to Clipboard</span>
+                <span class="item-desc" data-i18n="optCopyDesc">クリップボードにMarkdownテキストを即時コピー</span>
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab Content Area -->
+      <div class="tab-content-wrapper">
+        <!-- Tab 1: Overview & Interactive Charts -->
+        <div class="tab-pane active" id="tabOverview">
+          <div class="charts-row">
+            <!-- 5-Year Trends Line/Bar Chart -->
+            <div class="chart-card">
+              <div class="chart-header">
+                <h3 data-i18n="chartTrajectoryTitle">Multi-Year Financial Trajectory (Revenue & Profitability)</h3>
+                <span class="chart-sub" data-i18n="chartTrajectorySub">Reported Currency in Millions</span>
+              </div>
+              <div class="chart-canvas-wrapper">
+                <canvas id="financialTrajectoryChart"></canvas>
+              </div>
+            </div>
+
+            <!-- FCF & Cash Flow Chart -->
+            <div class="chart-card">
+              <div class="chart-header">
+                <h3 data-i18n="chartCashFlowTitle">Cash Generation & FCF Quality</h3>
+                <span class="chart-sub" data-i18n="chartCashFlowSub">Operating CF vs Capex vs FCF</span>
+              </div>
+              <div class="chart-canvas-wrapper">
+                <canvas id="cashFlowChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- DuPont 3-Stage Visualizer & CCC Balance Row -->
+          <div class="visualizers-row">
+            <!-- DuPont 3-Stage Tree Card -->
+            <div class="visualizer-card dupont-visualizer">
+              <div class="vis-header">
+                <h3 data-i18n="dupontTitle">3-Stage DuPont Analysis Decomposition</h3>
+                <span class="vis-badge" data-i18n="dupontBadge">ROE = Net Margin × Asset Turnover × Leverage</span>
+              </div>
+              <div class="dupont-tree">
+                <div class="dupont-node root-node">
+                  <span class="node-title" data-i18n="dupontRoeTitle">ROE (自己資本利益率)</span>
+                  <span class="node-value" id="dupontRoe">24.7%</span>
+                </div>
+                <div class="dupont-equal">=</div>
+                <div class="dupont-node">
+                  <span class="node-title" data-i18n="dupontMarginTitle">① Net Margin (収益性)</span>
+                  <span class="node-value" id="dupontNetMargin">2.41%</span>
+                  <span class="node-desc" data-i18n="dupontMarginDesc">当期純利益 / 売上高 (薄利多売)</span>
+                </div>
+                <div class="dupont-times">×</div>
+                <div class="dupont-node">
+                  <span class="node-title" data-i18n="dupontTurnoverTitle">② Turnover (資産効率)</span>
+                  <span class="node-value" id="dupontTurnover">1.60x</span>
+                  <span class="node-desc" data-i18n="dupontTurnoverDesc">売上高 / 総資産 (高回転)</span>
+                </div>
+                <div class="dupont-times">×</div>
+                <div class="dupont-node highlight-driver">
+                  <span class="node-title" data-i18n="dupontLeverageTitle">③ Leverage (資本構成)</span>
+                  <span class="node-value" id="dupontLeverage">6.40x</span>
+                  <span class="node-desc" data-i18n="dupontLeverageDesc">総資産 / 自己資本</span>
+                  <span class="driver-callout" id="dupontDriverCallout" data-i18n="dupontDriverCallout">★ 主要ドライバー (寄与度 65%)</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- CCC Working Capital Balance Card -->
+            <div class="visualizer-card ccc-visualizer">
+              <div class="vis-header">
+                <h3 data-i18n="cccCycleTitle">Working Capital Cycle (CCC Breakdown)</h3>
+                <span class="vis-badge" data-i18n="cccBadge">CCC = DSO + DIO − DPO</span>
+              </div>
+              <div class="ccc-cycle-container">
+                <div class="ccc-metric-block">
+                  <span class="ccc-label" data-i18n="cccDsoLabel">売上債権回収 (DSO)</span>
+                  <span class="ccc-val plus" id="cccDso">+42.1 Days</span>
+                </div>
+                <span class="ccc-math">+</span>
+                <div class="ccc-metric-block">
+                  <span class="ccc-label" data-i18n="cccDioLabel">棚卸在庫滞留 (DIO)</span>
+                  <span class="ccc-val plus" id="cccDio">+41.5 Days</span>
+                </div>
+                <span class="ccc-math">−</span>
+                <div class="ccc-metric-block">
+                  <span class="ccc-label" data-i18n="cccDpoLabel">仕入先支払猶予 (DPO)</span>
+                  <span class="ccc-val minus" id="cccDpo">−81.8 Days</span>
+                </div>
+                <span class="ccc-math">=</span>
+                <div class="ccc-metric-block highlight">
+                  <span class="ccc-label" data-i18n="cccResultLabel">現金循環日数 (CCC)</span>
+                  <span class="ccc-val result" id="cccResult">1.8 Days</span>
+                </div>
+              </div>
+
+              <!-- Visual Waterfall Timeline Bar -->
+              <div class="ccc-timeline-wrapper">
+                <div class="ccc-timeline-bar" id="cccTimelineBar">
+                  <div class="timeline-seg seg-dso" id="barDso" style="width: 25.5%;" title="売上債権回収 DSO: +42.1日">
+                    <span class="seg-text" data-i18n="cccBarDso">売掛 DSO</span>
+                  </div>
+                  <div class="timeline-seg seg-dio" id="barDio" style="width: 25.2%;" title="棚卸在庫滞留 DIO: +41.5日">
+                    <span class="seg-text" data-i18n="cccBarDio">在庫 DIO</span>
+                  </div>
+                  <div class="timeline-seg seg-dpo" id="barDpo" style="width: 49.3%;" title="仕入先支払猶予 DPO: -81.8日">
+                    <span class="seg-text" data-i18n="cccBarDpo">買掛 DPO (長期支払猶予)</span>
+                  </div>
+                </div>
+                <div class="ccc-timeline-caption">
+                  <span class="caption-icon">💡</span>
+                  <span id="cccCaptionText" data-i18n-html="cccCaption"><strong>ビジネスモデル特性</strong>: 仕入先への長期支払猶予（81.8日）が売掛金＋在庫の資金拘束（83.6日）をほぼ全額相殺。事業拡大に伴う追加運転資金借入が不要な<strong>自己金融型（マイナス運転資本）モデル</strong>を実現しています。</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 2: Full Institutional Report (A〜H) -->
+        <div class="tab-pane" id="tabReport">
+          <!-- Sticky In-Page TOC Quick Jump Navigation -->
+          <div class="report-toc-bar" id="reportTocBar">
+            <span class="toc-title" data-i18n="tocTitle">📑 Quick Jump:</span>
+            <div class="toc-chips-scroll">
+              <button type="button" class="toc-chip" data-target="sec-a" data-i18n="tocA">A. 要約</button>
+              <button type="button" class="toc-chip" data-target="sec-b" data-i18n="tocB">B. 事業構造</button>
+              <button type="button" class="toc-chip" data-target="sec-c" data-i18n="tocC">C. 財務推移</button>
+              <button type="button" class="toc-chip" data-target="sec-d" data-i18n="tocD">D. 20財務指標</button>
+              <button type="button" class="toc-chip" data-target="sec-e" data-i18n="tocE">E. 資本効率</button>
+              <button type="button" class="toc-chip" data-target="sec-f" data-i18n="tocF">F. 競合比較</button>
+              <button type="button" class="toc-chip" data-target="sec-g" data-i18n="tocG">G. リスク</button>
+              <button type="button" class="toc-chip" data-target="sec-h" data-i18n="tocH">H. 提言・出典</button>
+            </div>
+          </div>
+
+          <div class="report-toolbar">
+            <button id="copyReportBtn" class="btn-secondary" data-i18n="copyReportBtn">📋 Copy Markdown</button>
+            <button id="downloadPdfBtn" class="btn-secondary" data-i18n="quickPdfBtn">📄 Quick PDF</button>
+            <button id="downloadReportBtn" class="btn-secondary" data-i18n="downloadMdBtn">📥 Download .md</button>
+          </div>
+          <div class="report-body markdown-rendered" id="reportMarkdownContainer">
+            <!-- Full markdown report will be rendered here -->
+          </div>
+        </div>
+
+        <!-- Tab 3: Peer Benchmark Comparison -->
+        <div class="tab-pane" id="tabBenchmark">
+          <!-- 4-Metric Competitive Standing Highlights Grid -->
+          <div class="benchmark-highlights-grid" id="bmHighlightsGrid">
+            <div class="bm-card highlight-card">
+              <div class="bm-card-header">
+                <span class="bm-card-icon">👑</span>
+                <span class="bm-card-title" data-i18n="bmHeroShareTitle">PC事業 世界シェア</span>
+              </div>
+              <div class="bm-card-metric" id="bmHeroShare">24.0% (世界首位)</div>
+              <div class="bm-card-sub" data-i18n="bmHeroShareSub">Lenovoが首位堅持 / HP(20%) Dell(17%)</div>
+            </div>
+            <div class="bm-card">
+              <div class="bm-card-header">
+                <span class="bm-card-icon">📈</span>
+                <span class="bm-card-title" data-i18n="bmHeroOpmTitle">営業利益率 (OPM)</span>
+              </div>
+              <div class="bm-card-metric" id="bmHeroOpm">3.7% vs 8.8%</div>
+              <div class="bm-card-sub" data-i18n="bmHeroOpmSub">Dell(8.8%)・HP(8.0%) 米系が高マージン</div>
+            </div>
+            <div class="bm-card highlight-card">
+              <div class="bm-card-header">
+                <span class="bm-card-icon">🛡️</span>
+                <span class="bm-card-title" data-i18n="bmHeroDebtTitle">純有利子負債倍率</span>
+              </div>
+              <div class="bm-card-metric" id="bmHeroDebt">0.43x (最も健全)</div>
+              <div class="bm-card-sub" data-i18n="bmHeroDebtSub">Dell(1.2x)・HP(1.8x) に対し強固な財務余力</div>
+            </div>
+            <div class="bm-card">
+              <div class="bm-card-header">
+                <span class="bm-card-icon">⚡</span>
+                <span class="bm-card-title" data-i18n="bmHeroCccTitle">現金循環日数 (CCC)</span>
+              </div>
+              <div class="bm-card-metric" id="bmHeroCcc">1.8日 (高効率)</div>
+              <div class="bm-card-sub" data-i18n="bmHeroCccSub">3社ともに極めて効率的なマイナス運転資本</div>
+            </div>
+          </div>
+
+          <div class="benchmark-container" id="benchmarkContainer">
+            <table class="benchmark-table">
+              <thead>
+                <tr>
+                  <th data-i18n="bmThMetric">指標 / カテゴリ</th>
+                  <th class="target-th" id="bmTargetHead">Lenovo Group (0992.HK)</th>
+                  <th id="bmPeer1Head">Dell Technologies (DELL)</th>
+                  <th id="bmPeer2Head">HP Inc. (HPQ)</th>
+                  <th data-i18n="bmThImplication">業界インプリケーション</th>
+                </tr>
+              </thead>
+              <tbody id="benchmarkTableBody">
+                <tr>
+                  <td><strong>会計基準 / 決算期</strong></td>
+                  <td class="target-cell">HKFRS (3月期)</td>
+                  <td>US GAAP (1月期)</td>
+                  <td>US GAAP (10月期)</td>
+                  <td>決算期差に留意</td>
+                </tr>
+                <tr>
+                  <td><strong>直近売上高</strong></td>
+                  <td class="target-cell"><strong>$83.1B (+20%)</strong></td>
+                  <td>$113.5B (+19%)</td>
+                  <td>$55.3B (+1%)</td>
+                  <td>DellとLenovoがAI需要で牽引</td>
+                </tr>
+                <tr>
+                  <td><strong>PC事業シェア / 売上</strong></td>
+                  <td class="target-cell"><span class="bm-badge leader">世界首位 (24%) 👑</span> / $58.9B</td>
+                  <td>シェア3位 / 約$48B</td>
+                  <td>シェア2位 / 約$38B</td>
+                  <td>レノボが首位維持、AI PC先行</td>
+                </tr>
+                <tr>
+                  <td><strong>営業利益率 (OPM)</strong></td>
+                  <td class="target-cell"><span class="bm-badge caution">3.7% ⚠️</span></td>
+                  <td><span class="bm-badge leader">8.8% 🥇</span></td>
+                  <td>8.0%</td>
+                  <td>米系は高利益率、レノボは薄利多売</td>
+                </tr>
+                <tr>
+                  <td><strong>ROE (自己資本利益率)</strong></td>
+                  <td class="target-cell"><strong>24.7%</strong></td>
+                  <td>>50%</td>
+                  <td>N/A (債務超過)</td>
+                  <td>自社株買い依存と営業回転の差</td>
+                </tr>
+                <tr>
+                  <td><strong>Net Debt / EBITDA</strong></td>
+                  <td class="target-cell"><span class="bm-badge safe">0.43x 🟢 最健</span></td>
+                  <td>1.2x</td>
+                  <td>1.8x</td>
+                  <td>レノボの財務基盤が最も健全</td>
+                </tr>
+                <tr>
+                  <td><strong>CCC (現金循環日数)</strong></td>
+                  <td class="target-cell"><strong>1.8日</strong></td>
+                  <td>-30日</td>
+                  <td>-25日</td>
+                  <td>3社とも極めて効率的なマイナス運転資本</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tab 4: Risks & Early Warning Indicators -->
+        <div class="tab-pane" id="tabRisks">
+          <!-- 2x2 Risk Heatmap Matrix Visualizer -->
+          <div class="risk-matrix-card" id="riskMatrixCard">
+            <div class="matrix-header">
+              <div class="matrix-title-wrapper">
+                <span class="matrix-icon">🛡️</span>
+                <span class="matrix-title" data-i18n="riskMatrixTitle">早期警戒リスク・ヒートマップマトリクス (2×2 Impact × Likelihood Grid)</span>
+              </div>
+              <span class="matrix-subtitle" data-i18n="riskMatrixSubtitle">財務影響度（縦軸） × 発生確率（横軸）によるリスク評価マップ</span>
+            </div>
+            <div class="matrix-grid-container">
+              <div class="matrix-axis-y-label">
+                <span data-i18n="axisImpact">財務影響度 (Impact) ▲</span>
+              </div>
+              <div class="matrix-quadrants-wrapper">
+                <div class="matrix-quadrant quad-severe">
+                  <div class="quad-header">
+                    <span class="quad-tag severe" data-i18n="quadSevere">高影響 × 中確率 [Severe]</span>
+                  </div>
+                  <div class="quad-items" id="quadSevereItems">
+                    <div class="risk-pin med">
+                      <span class="pin-badge">事業</span>
+                      <span class="pin-text">ISG事業収益改善遅延 (CSP向け採算)</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="matrix-quadrant quad-critical">
+                  <div class="quad-header">
+                    <span class="quad-tag critical" data-i18n="quadCritical">高影響 × 高確率 [Critical 最警戒]</span>
+                  </div>
+                  <div class="quad-items" id="quadCriticalItems">
+                    <div class="risk-pin high">
+                      <span class="pin-badge">地政学</span>
+                      <span class="pin-text">対米・対中関税及び通商輸出規制</span>
+                    </div>
+                    <div class="risk-pin high">
+                      <span class="pin-badge">原価</span>
+                      <span class="pin-text">メモリ (DRAM/NAND) スポット価格高騰</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="matrix-quadrant quad-moderate">
+                  <div class="quad-header">
+                    <span class="quad-tag moderate" data-i18n="quadModerate">中影響 × 中/低確率 [Moderate]</span>
+                  </div>
+                  <div class="quad-items" id="quadModerateItems">
+                    <div class="risk-pin low">
+                      <span class="pin-badge">為替</span>
+                      <span class="pin-text">米ドル・人民元・主要国通貨の急激な為替変動</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="matrix-quadrant quad-active">
+                  <div class="quad-header">
+                    <span class="quad-tag active" data-i18n="quadActive">中影響 × 顕在化 [Active / Realized]</span>
+                  </div>
+                  <div class="quad-items" id="quadActiveItems">
+                    <div class="risk-pin active">
+                      <span class="pin-badge">持分</span>
+                      <span class="pin-text">クライアント持分金融商品の公正価値評価損</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="matrix-axis-x-label">
+              <span data-i18n="axisLikelihood">発生確率 (Likelihood) ► [中確率 ──────► 高確率 / 顕在化]</span>
+            </div>
+          </div>
+
+          <div class="risks-container" id="risksContainer">
+            <table class="risks-table">
+              <thead>
+                <tr>
+                  <th data-i18n="thRiskCategory">リスク分類</th>
+                  <th data-i18n="thImpact">重要度</th>
+                  <th data-i18n="thProbability">発生確率</th>
+                  <th data-i18n="thEwi">早期警戒指標 (EWI)</th>
+                  <th data-i18n="thDocument">確認すべき開示資料</th>
+                  <th data-i18n="thAuditStatus">監査ステータス</th>
+                </tr>
+              </thead>
+              <tbody id="risksTableBody">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Gemini API Key & Model Modal -->
+  <div class="modal-overlay" id="apiKeyModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 data-i18n="modalTitle">🔑 Gemini API & Model Configuration</h3>
+        <button id="closeModalBtn" class="btn-close">×</button>
+      </div>
+      <div class="modal-body">
+        <p data-i18n="modalDesc">Google AI Studio で取得した Gemini API Key と使用するモデルを選択してください。直前に選択したモデルは次回以降も自動的にデフォルトとして維持されます。</p>
+        
+        <div class="input-field" style="margin-bottom: 14px;">
+          <label for="geminiApiKeyInput" data-i18n="lblApiKey">Gemini API Key:</label>
+          <input type="password" id="geminiApiKeyInput" placeholder="AIzaSy...">
+        </div>
+
+        <div class="input-field" style="margin-bottom: 14px;">
+          <label for="geminiModelSelect" data-i18n="lblModelSelect">Gemini Model:</label>
+          <select id="geminiModelSelect" class="select-styled">
+            <option value="gemini-2.5-flash">gemini-2.5-flash (推奨・超高速 / Default)</option>
+            <option value="gemini-2.5-pro">gemini-2.5-pro (最高推論・詳細財務分析)</option>
+            <option value="gemini-2.0-flash">gemini-2.0-flash</option>
+            <option value="gemini-1.5-pro">gemini-1.5-pro</option>
+            <option value="gemini-1.5-flash">gemini-1.5-flash</option>
+            <option value="custom">✏️ カスタムモデル名を直接入力...</option>
+          </select>
+        </div>
+
+        <div class="input-field" id="customModelField" style="display: none; margin-bottom: 14px;">
+          <label for="customModelInput" data-i18n="lblCustomModel">カスタムモデル名 (Model Identifier):</label>
+          <input type="text" id="customModelInput" placeholder="e.g. gemini-2.5-flash, gemini-2.5-pro, gemini-2.0-flash...">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="saveApiKeyBtn" class="btn-primary" data-i18n="btnSaveSettings">Save Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Research History & Audit Trail Modal Archive -->
+  <div class="modal-overlay" id="historyModal">
+    <div class="modal-card modal-card-wide history-modal-card">
+      <div class="modal-header">
+        <div class="modal-header-titles">
+          <div class="modal-pill-tag">AUDIT TRAIL ARCHIVE</div>
+          <h3 data-i18n="historyModalTitle">📜 投資調査履歴 & 監査アーカイブ</h3>
+          <p class="modal-subtitle" data-i18n="historyModalSubtitle">いつ・何のデータソース・どのモデル/スキルで分析したかを完全記録</p>
+        </div>
+        <button id="closeHistoryModalBtn" class="btn-close">×</button>
+      </div>
+
+      <div class="modal-body history-modal-body">
+        <!-- History Action & Filter Toolbar -->
+        <div class="history-toolbar">
+          <div class="history-search-wrap">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="historySearchInput" placeholder="企業名・ティッカー・日付で絞り込み..." data-i18n-placeholder="historySearchPlaceholder">
+          </div>
+          <div class="history-global-actions">
+            <button type="button" class="btn-history-tool" id="exportAllHistoryBtn" title="全件JSONエクスポート">
+              <span class="tool-icon">📥</span>
+              <span data-i18n="historyExportAll">全履歴エクスポート (JSON)</span>
+            </button>
+            <button type="button" class="btn-history-tool danger" id="clearAllHistoryBtn" title="全履歴を消去">
+              <span class="tool-icon">🗑️</span>
+              <span data-i18n="historyClearAll">全件クリア</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- History Records Container -->
+        <div class="history-items-list" id="historyItemsList">
+          <!-- Dynamically populated or empty state -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="/static/js/i18n.js"></script>
+  <script src="/static/js/charts.js"></script>
+  <script src="/static/js/app.js?v=2.4.5"></script>
+</body>
+</html>
